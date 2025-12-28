@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <title>{{ config('app.name', 'Covsm') }}</title>
-    <link rel="icon" href="/favicon.ico">
+    <link rel="icon" href="images/favicon.ico">
     <title>Pro-Task | Organize, Track, and Accomplish More. Together.</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -24,12 +24,13 @@
 
     <!-- Styles / Scripts -->
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
-    @vite(['resources/css/app.css','resources/css/homePageStyle.css', 'resources/js/app.js', 'resources/js/homePageScript.js'])
+    @vite(['resources/css/app.css','resources/css/homePageStyle.css', 'resources/js/app.js',
+    'resources/js/homePageScript.js'])
     @endif
 </head>
 
-<body >
-    
+<body>
+
     <div id="app" data-v-app="">
         <div class="bg-white text-slate-800 min-h-screen">
             <header class="sticky top-0 bg-white/90 backdrop-blur-md z-50 border-b border-slate-200/60 shadow-sm">
@@ -37,11 +38,11 @@
                     <div class="flex items-center justify-between h-16">
                         <div class="flex-shrink-0"><a href="#"
                                 class="text-2xl font-bold text-slate-900 flex items-center group"><img
-                                    src="images/logo.svg"
+                                    src="images/Only_Logo.png"
                                     class="h-8 w-auto group-hover:scale-105 transition-transform duration-300"
-                                    alt="ProTask"><span
-                                    class="ml-2 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent font-bold">
-                                    ProTask </span></a></div>
+                                    alt="COVSM"><span
+                                    class="ml-2 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent font-vandal">
+                                    COVSM </span></a></div>
                         <nav class="hidden md:flex md:items-center md:space-x-8"><a href="#features"
                                 class="text-slate-600 hover:text-indigo-600 font-medium transition-colors duration-200 group">
                                 Features <span

@@ -5,3 +5,14 @@
 [x-cloak] {
     display: none;
 }
+
+@font-face {
+    font-family: 'LegalVandal';
+    src: url('../fonts/Legal_Vandal_Stencil.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+@theme {
+    /* This creates the 'font-vandal' class for Tailwind */
+    --font-vandal: "LegalVandal", cursive;
+}
