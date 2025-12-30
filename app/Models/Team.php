@@ -7,6 +7,7 @@ use Laravel\Jetstream\Events\TeamCreated;
 use Laravel\Jetstream\Events\TeamDeleted;
 use Laravel\Jetstream\Events\TeamUpdated;
 use Laravel\Jetstream\Team as JetstreamTeam;
+use Illuminate\Support\Facades\Auth;
 
 class Team extends JetstreamTeam
 {
@@ -19,8 +20,9 @@ class Team extends JetstreamTeam
      * @var array<int, string>
      */
     protected $fillable = [
-        'name',
-        'personal_team',
+        'user_id', // foreign key
+        'name', // string
+        'personal_team', // boolean
     ];
 
     /**
@@ -45,4 +47,18 @@ class Team extends JetstreamTeam
             'personal_team' => 'boolean',
         ];
     }
+
+    protected static function booted(): void
+{
+    static::creating(function ($team) {
+        if (! $team->user_id) {
+            $team->user_id = Auth::id();
+        }
+
+        if (is_null($team->personal_team)) {
+            $team->personal_team = false;
+        }
+    });
+}
+
 }

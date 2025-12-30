@@ -15,7 +15,7 @@
 
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" rel="stylesheet">
     <script type="module" crossorigin src="/javascrips.js"></script>
-    <link rel="stylesheet" crossorigin href="/resources/css/homePageStyle.css">
+    <link rel="stylesheet" crossorigin href="/resources/css/dashboardPageStyle.css">
 
 
     <!-- Fonts -->
@@ -24,8 +24,8 @@
 
     <!-- Styles / Scripts -->
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
-    @vite(['resources/css/app.css','resources/css/homePageStyle.css', 'resources/js/app.js',
-    'resources/js/homePageScript.js'])
+    @vite(['resources/css/app.css','resources/css/dashboardPageStyle.css', 'resources/js/app.js',
+    'resources/js/dashboardPageScript.js'])
     @endif
 </head>
 
