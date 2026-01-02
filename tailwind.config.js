@@ -9,6 +9,8 @@ export default {
         './vendor/laravel/jetstream/**/*.blade.php',
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
+        './resources/views/filament/**/*.blade.php', // <--- MAKE SURE THIS IS HERE
+        './app/Filament/**/*.php',
     ],
 
     theme: {
