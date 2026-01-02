@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Teams\Pages;
 
 use App\Filament\Resources\Teams\TeamResource;
+use App\Filament\Resources\Teams\RelationManagers\MembersRelationManager;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
 

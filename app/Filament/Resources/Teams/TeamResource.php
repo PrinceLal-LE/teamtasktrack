@@ -17,6 +17,8 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Builder;
+use App\Filament\Resources\Teams\RelationManagers\MembersRelationManager;
 
 
 class TeamResource extends Resource
@@ -27,7 +29,7 @@ class TeamResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Team Management';
+    // protected static string|UnitEnum|null $navigationGroup = 'Team Management';
 
     public static function form(Schema $schema): Schema
     {
@@ -42,6 +44,26 @@ class TeamResource extends Resource
     public static function table(Table $table): Table
     {
         return TeamsTable::configure($table);
+    }
+
+
+    // public static function getEloquentQuery(): Builder
+    // {
+    //     $user = Auth::user();
+
+    //     if ($user->role === 'Admin' || $user->role === 'Super Admin') {
+    //         return parent::getEloquentQuery();
+    //     }
+
+    //     return parent::getEloquentQuery()
+    //         ->whereHas('users', fn($query) => $query->where('users.id', $user->id));
+    // }
+
+    public static function getRelations(): array
+    {
+        return [
+            MembersRelationManager::class,
+        ];
     }
 
     protected static function mutateFormDataBeforeCreate(array $data): array
