@@ -16,4 +16,15 @@ class EditUser extends EditRecord
             DeleteAction::make(),
         ];
     }
+
+    protected function afterSave(): void
+    {
+        $user = $this->record;
+
+        if ($user->current_team_id) {
+            $user->teams()->syncWithoutDetaching([
+                $user->current_team_id => ['role' => 'Staff'],
+            ]);
+        }
+    }
 }

@@ -49,16 +49,22 @@ class Team extends JetstreamTeam
     }
 
     protected static function booted(): void
-{
-    static::creating(function ($team) {
-        if (! $team->user_id) {
-            $team->user_id = Auth::id();
-        }
+    {
+        static::creating(function ($team) {
+            if (! $team->user_id) {
+                $team->user_id = Auth::id();
+            }
 
-        if (is_null($team->personal_team)) {
-            $team->personal_team = false;
-        }
-    });
-}
+            if (is_null($team->personal_team)) {
+                $team->personal_team = false;
+            }
+        });
+    }
 
+    public function users()
+    {
+        return $this->belongsToMany(User::class)
+            ->withPivot('role')
+            ->withTimestamps();
+    }
 }

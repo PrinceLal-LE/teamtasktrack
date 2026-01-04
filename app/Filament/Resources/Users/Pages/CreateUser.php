@@ -8,4 +8,15 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateUser extends CreateRecord
 {
     protected static string $resource = UserResource::class;
+
+    protected function afterCreate(): void
+    {
+        $user = $this->record;
+
+        if ($user->current_team_id) {
+            $user->teams()->syncWithoutDetaching([
+                $user->current_team_id => ['role' => 'Staff'],
+            ]);
+        }
+    }
 }
