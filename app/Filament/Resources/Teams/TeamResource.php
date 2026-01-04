@@ -47,17 +47,21 @@ class TeamResource extends Resource
     }
 
 
-    // public static function getEloquentQuery(): Builder
-    // {
-    //     $user = Auth::user();
+    public static function getEloquentQuery(): Builder
+    {
+        $user = Auth::user();
 
-    //     if ($user->role === 'Admin' || $user->role === 'Super Admin') {
-    //         return parent::getEloquentQuery();
-    //     }
+        if ($user->hasRole('Admin')) {
+            return parent::getEloquentQuery();
+        }
 
-    //     return parent::getEloquentQuery()
-    //         ->whereHas('users', fn($query) => $query->where('users.id', $user->id));
-    // }
+        if ($user->hasRole('Team Lead')) {
+            return parent::getEloquentQuery()
+                ->where('user_id', $user->id);
+        }
+
+        return parent::getEloquentQuery()->whereRaw('1 = 0');
+    }
 
     public static function getRelations(): array
     {

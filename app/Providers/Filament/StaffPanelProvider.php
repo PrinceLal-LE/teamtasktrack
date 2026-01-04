@@ -2,7 +2,6 @@
 
 namespace App\Providers\Filament;
 
-use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -11,7 +10,6 @@ use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use Filament\View\PanelsRenderHook;
 use Filament\Widgets\AccountWidget;
 use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -19,43 +17,29 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
-use Illuminate\Support\Facades\Blade;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
-class AdminPanelProvider extends PanelProvider
+class StaffPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
         return $panel
-            ->default()
-            ->id('admin')
-            ->path('admin')
-            ->brandName('Covsm')
-            ->brandLogo(asset('images/Covsm_Logo_1.png'))
-            ->brandLogoHeight('2.5rem')
-            ->favicon(asset('images/favicon.ico'))
-
-            ->login()
-            ->authGuard('web')
-            ->homeUrl(fn() => match (true) {
-                auth()->user()?->hasRole('Admin')     => url('/admin'),
-                auth()->user()?->hasRole('Team Lead') => url('/teamlead'),
-                auth()->user()?->hasRole('Developer') => url('/developer'),
-                auth()->user()?->hasRole('Staff')     => url('/staff'),
-                default => url('/'),
-            })
+            ->id('staff')
+            ->path('staff')
+            ->authMiddleware(['auth'])
+            // ->canAccess(fn ($user) => $user->hasRole('Staff'))
             ->colors([
                 'primary' => Color::Amber,
             ])
-            ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
-            ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
+            ->discoverResources(in: app_path('Filament/Staff/Resources'), for: 'App\Filament\Staff\Resources')
+            ->discoverPages(in: app_path('Filament/Staff/Pages'), for: 'App\Filament\Staff\Pages')
             ->pages([
                 Dashboard::class,
             ])
-            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
+            ->discoverWidgets(in: app_path('Filament/Staff/Widgets'), for: 'App\Filament\Staff\Widgets')
             ->widgets([
                 AccountWidget::class,
-                // FilamentInfoWidget::class,
+                FilamentInfoWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -68,17 +52,8 @@ class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
-            ->plugins([
-                FilamentShieldPlugin::make(),
-            ])
             ->authMiddleware([
                 Authenticate::class,
-            ])
-            // ADD THIS SECTION:
-            ->renderHook(
-                PanelsRenderHook::HEAD_END,
-                fn(): string => Blade::render('@vite("resources/css/app.css")')
-            )
-            ->path('admin');
+            ]);
     }
 }

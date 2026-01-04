@@ -2,75 +2,56 @@
 
 namespace App\Policies;
 
-use App\Models\Team;
 use App\Models\User;
-use Illuminate\Auth\Access\HandlesAuthorization;
+use App\Models\Team;
 
 class TeamPolicy
 {
-    use HandlesAuthorization;
-
-    /**
-     * Determine whether the user can view any models.
-     */
     public function viewAny(User $user): bool
     {
         return true;
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
     public function view(User $user, Team $team): bool
     {
-        return $user->belongsToTeam($team);
+        // Admin can access any team
+        if ($user->hasRole('Admin')) return true;
+
+        // Team Lead can only access teams they own
+        if ($user->hasRole('Team Lead')) {
+            return $user->ownsTeam($team);
+        }
+
+        // Developer and Staff can only access teams they belong to
+        if ($user->hasAnyRole(['Developer', 'Staff'])) {
+            return $team->hasUser($user);
+        }
+
+        return false;
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
-    public function create(User $user): bool
-    {
-        return true;
-    }
-
-    /**
-     * Determine whether the user can update the model.
-     */
     public function update(User $user, Team $team): bool
     {
-        return $user->ownsTeam($team);
+        if ($user->hasRole('Admin')) return true;
+
+        return $team->users()
+            ->where('users.id', $user->id)
+            ->wherePivot('role', 'Team Lead')
+            ->exists();
     }
 
-    /**
-     * Determine whether the user can add team members.
-     */
-    public function addTeamMember(User $user, Team $team): bool
-    {
-        return $user->ownsTeam($team);
-    }
-
-    /**
-     * Determine whether the user can update team member permissions.
-     */
-    public function updateTeamMember(User $user, Team $team): bool
-    {
-        return $user->ownsTeam($team);
-    }
-
-    /**
-     * Determine whether the user can remove team members.
-     */
-    public function removeTeamMember(User $user, Team $team): bool
-    {
-        return $user->ownsTeam($team);
-    }
-
-    /**
-     * Determine whether the user can delete the model.
-     */
     public function delete(User $user, Team $team): bool
     {
-        return $user->ownsTeam($team);
+        return $this->update($user, $team);
+    }
+
+    public function manageMembers(User $user, Team $team): bool
+    {
+        if ($user->hasRole('Admin')) return true;
+
+        return $team->users()
+            ->where('users.id', $user->id)
+            ->wherePivot('role', 'Team Lead')
+            ->exists();
     }
 }

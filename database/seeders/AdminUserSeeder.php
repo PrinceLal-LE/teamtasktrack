@@ -4,48 +4,106 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\User;
+use App\Models\Team;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
-use App\Models\Team;
-
 
 class AdminUserSeeder extends Seeder
 {
     public function run(): void
     {
-        $admin = User::factory()->withPersonalTeam()->create([
-            'name' => 'Super Admin',
-            'email' => 'superadmin1@example.com',
-            'password' => bcrypt('password'),
-        ]);
+        // ---- Roles ----
+        $adminRole = Role::firstOrCreate(['name' => 'Admin']);
+        $leadRole  = Role::firstOrCreate(['name' => 'Team Lead']);
+        $developerRole = Role::firstOrCreate(['name' => 'Developer']);
+        $staffRole     = Role::firstOrCreate(['name' => 'Staff']);
 
-        $role = Role::firstOrCreate(['name' => 'Admin']);
-        // Create permissions directly or implement the missing Utils class
 
-        $role->givePermissionTo(Permission::all());
+        // ---- Permissions (optional blanket grant) ----
+        $adminRole->givePermissionTo(Permission::all());
 
-        $admin->assignRole('Admin');
-
-        $user = User::firstOrCreate(
-            ['email' => 'admin@example.com'],
+        // ---- Super Admin ----
+        $superAdmin = User::firstOrCreate(
+            ['email' => 'superadmin@example.com'],
             [
-                'name' => 'Admin',
+                'name' => 'Super Admin',
                 'password' => Hash::make('password'),
             ]
         );
-        $user->assignRole('Admin');
 
-        // Create default team for admin
-        if (! $user->ownedTeams()->exists()) {
+        $superAdmin->assignRole($adminRole);
+
+        if (! $superAdmin->ownedTeams()->exists()) {
             $team = Team::create([
-                'user_id' => $user->id,
-                'name' => 'Admin Team',
+                'user_id' => $superAdmin->id,
+                'name' => 'Super Admin Team',
                 'personal_team' => true,
             ]);
 
-            $user->current_team_id = $team->id;
-            $user->save();
+            $superAdmin->update(['current_team_id' => $team->id]);
         }
+
+        // ---- Admin ----
+        $admin = User::firstOrCreate(
+            ['email' => 'admin@example.com'],
+            [
+                'name' => 'Admin User',
+                'password' => Hash::make('password'),
+            ]
+        );
+
+        $admin->assignRole($adminRole);
+
+        if (! $admin->ownedTeams()->exists()) {
+            $team = Team::create([
+                'user_id' => $admin->id,
+                'name' => 'Admin Team',
+                'personal_team' => false,
+            ]);
+
+            $admin->update(['current_team_id' => $team->id]);
+        }
+
+        // ---- Team Lead ----
+        $lead = User::firstOrCreate(
+            ['email' => 'lead@example.com'],
+            [
+                'name' => 'Team Lead',
+                'password' => Hash::make('password'),
+            ]
+        );
+
+        $lead->assignRole($leadRole);
+
+        if (! $lead->ownedTeams()->exists()) {
+            $team = Team::create([
+                'user_id' => $lead->id,
+                'name' => 'Lead Team',
+                'personal_team' => false,
+            ]);
+
+            $lead->update(['current_team_id' => $team->id]);
+        }
+
+        // ---- Extra Team (for access violation testing) ----
+        Team::firstOrCreate([
+            'user_id' => $admin->id,
+            'name' => 'Other Team',
+            'personal_team' => false,
+        ]);
+
+
+        $dev = User::firstOrCreate(
+            ['email' => 'dev@example.com'],
+            ['name' => 'Developer User', 'password' => Hash::make('password')]
+        );
+        $dev->assignRole($developerRole);
+
+        $staff = User::firstOrCreate(
+            ['email' => 'staff@example.com'],
+            ['name' => 'Staff User', 'password' => Hash::make('password')]
+        );
+        $staff->assignRole($staffRole);
     }
 }
