@@ -1,0 +1,71 @@
+name: Deploy to cPanel
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  web-deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Get the latest code
+    - name: 🚚 Get latest code
+      uses: actions/checkout@v4
+
+    # 2. Setup PHP (to install dependencies)
+    - name: 🟢 Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2' # Adjust if your server uses 8.1 or 8.3
+        extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv
+        coverage: none
+
+    # 3. Install Composer Dependencies (Vendor folder)
+    - name: 🎼 Install Composer Dependencies
+      run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist --optimize-autoloader
+
+    # 4. Setup Node.js (for Vite)
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    # 5. Build Vite Assets (Compiles JS/CSS to public/build)
+    - name: ⚡ Build Vite Assets
+      run: |
+        npm install
+        npm run build
+
+    # 6. Deploy Files via Rsync (SSH)
+    # This copies ONLY the necessary files to your server
+    - name: 📂 Sync files to cPanel
+      uses: easingthemes/ssh-deploy@main
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        ARGS: "-rlgoDzvc -i --delete"
+        SOURCE: "/"
+        REMOTE_HOST: ${{ secrets.SSH_HOST }}
+        REMOTE_USER: ${{ secrets.SSH_USER }}
+        # Note: path based on your screenshot
+        TARGET: "/home/qhxrmvtx/devlop.teamtasktrack.com/" 
+        EXCLUDE: "/node_modules/, /dist/, /.git/, /.github/, /tests/, /.env"
+
+    # 7. Run Post-Deployment Commands on Server
+    - name: 🚀 Run Artisan Commands
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: ${{ secrets.SSH_PORT }}
+        script: |
+          cd /home/qhxrmvtx/devlop.teamtasktrack.com
+          php artisan migrate --force
+          php artisan storage:link
+          php artisan optimize:clear
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
+          php artisan filament:optimize
