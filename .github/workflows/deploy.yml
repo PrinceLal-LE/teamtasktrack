@@ -34,21 +34,21 @@ jobs:
 
     # ✅ SFTP DEPLOY (MilesWeb safe)
     - name: 📂 Deploy via SFTP
-      uses: SamKirkland/FTP-Deploy-Action@v3.4.3
+      uses: appleboy/scp-action@v0.1.7
       with:
-        server: ${{ secrets.SSH_HOST }}
+        host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USER }}
-        password: ${{ secrets.CPANEL_PASSWORD }}
-        protocol: sftp
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: ${{ secrets.SSH_PORT }}
-        local-dir: ./
-        server-dir: /public_html/devlop.teamtasktrack.com/
+        source: "."
+        target: "/home/qhxrmvtx/public_html/devlop.teamtasktrack.com"
+        rm: true
         exclude: |
-          **/.git*
-          **/.github*
-          **/node_modules/**
-          **/tests/**
-          **/.env
+          .git
+          .github
+          node_modules
+          tests
+          .env
 
     # ✅ Run Laravel commands
     - name: 🚀 Run Artisan commands
