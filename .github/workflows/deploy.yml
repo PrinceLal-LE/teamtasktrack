@@ -34,7 +34,7 @@ jobs:
 
     # ✅ SFTP DEPLOY (MilesWeb safe)
     - name: 📂 Deploy via SFTP
-      uses: SamKirkland/FTP-Deploy-Action@v4
+      uses: SamKirkland/FTP-Deploy-Action@v3.4.3
       with:
         server: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USER }}
