@@ -48,6 +48,7 @@ jobs:
         SOURCE: "/"
         REMOTE_HOST: ${{ secrets.SSH_HOST }}
         REMOTE_USER: ${{ secrets.SSH_USER }}
+        REMOTE_PORT: ${{ secrets.SSH_PORT }}
         # Note: path based on your screenshot
         TARGET: "/home/qhxrmvtx/devlop.teamtasktrack.com/" 
         EXCLUDE: "/node_modules/, /dist/, /.git/, /.github/, /tests/, /.env"
