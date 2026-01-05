@@ -1,56 +1,65 @@
-name: Deploy to cPanel
+name: Deploy to cPanel (Laravel + Vite)
 
 on:
   push:
-    branches: [ master ]
+    branches:
+      - master
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
+    # 1️⃣ Checkout code
     - name: 🚚 Checkout code
       uses: actions/checkout@v4
 
+    # 2️⃣ Setup PHP
     - name: 🟢 Setup PHP
       uses: shivammathur/setup-php@v2
       with:
         php-version: '8.2'
+        extensions: mbstring, pdo, pdo_mysql, zip, intl, gd
         coverage: none
 
+    # 3️⃣ Install Composer dependencies
     - name: 🎼 Install Composer dependencies
       run: |
         composer install --no-dev --optimize-autoloader --no-interaction
 
+    # 4️⃣ Setup Node.js
     - name: 🟢 Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
 
+    # 5️⃣ Build Vite assets
     - name: ⚡ Build Vite assets
       run: |
         npm ci
         npm run build
 
-    # ✅ SFTP DEPLOY (MilesWeb safe)
-    - name: 📂 Deploy via SFTP
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USER }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        port: ${{ secrets.SSH_PORT }}
-        source: "."
-        target: "/home/qhxrmvtx/public_html/devlop.teamtasktrack.com"
-        rm: true
-        exclude: |
-          .git
-          .github
-          node_modules
-          tests
-          .env
+    # 6️⃣ Setup SSH
+    - name: 🔐 Setup SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-    # ✅ Run Laravel commands
+    # 7️⃣ Deploy files using rsync (MOST STABLE)
+    - name: 📂 Deploy via rsync
+      run: |
+        rsync -az --delete \
+          --exclude=".git/" \
+          --exclude=".github/" \
+          --exclude="node_modules/" \
+          --exclude="tests/" \
+          --exclude=".env" \
+          ./ \
+          ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/qhxrmvtx/public_html/devlop.teamtasktrack.com/
+
+    # 8️⃣ Run Laravel commands on server
     - name: 🚀 Run Artisan commands
       uses: appleboy/ssh-action@master
       with:
@@ -61,7 +70,7 @@ jobs:
         script: |
           cd /home/qhxrmvtx/public_html/devlop.teamtasktrack.com
           php artisan migrate --force
-          php artisan storage:link
+          php artisan storage:link || true
           php artisan optimize:clear
           php artisan config:cache
           php artisan route:cache
