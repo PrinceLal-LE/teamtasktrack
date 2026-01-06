@@ -1,5 +1,6 @@
 <x-filament-panels::page class="h-full">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <div class="mb-2">
         <label for="project-select" class="sr-only">Select Project</label>
@@ -74,6 +75,9 @@
         </div>
     </div>
 
+    {{-- Required for Filament Actions (modals / slide-overs) to render when using mountAction() --}}
+    <x-filament-actions::modals />
+
     <script>
         function kanbanBoard($wire) {
             return {
@@ -95,5 +99,6 @@
                 }
             }
         }
+
     </script>
 </x-filament-panels::page>
