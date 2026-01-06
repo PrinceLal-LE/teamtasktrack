@@ -41,11 +41,24 @@
                                 wire:key="task-{{ $task->id }}" 
                                 data-id="{{ $task->id }}" 
                                 wire:click="editTask({{ $task->id }})"
+                                wire:dblclick="editTask({{ $task->id }})"
                                 class="bg-white dark:bg-gray-800 p-3 rounded shadow cursor-pointer hover:shadow-md border border-gray-200 dark:border-gray-700 group relative"
+                                style="touch-action: pan-y; user-select: none;"
                             >
                                 <div class="font-medium text-sm text-gray-900 dark:text-gray-100">{{ $task->title }}</div>
                                 <div class="text-xs text-gray-500 mt-2 flex justify-between items-center">
                                     <span>{{ $task->assignee?->name ?? 'Unassigned' }}</span>
+                                    <button 
+                                        type="button"
+                                        wire:click.stop="editTask({{ $task->id }})"
+                                        x-on:click.stop="$wire.editTask({{ $task->id }})"
+                                        class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 text-xs p-1"
+                                        title="Edit task"
+                                    >
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                        </svg>
+                                    </button>
                                 </div>
                             </div>
                         @endforeach
@@ -69,6 +82,8 @@
                         group: 'kanban',
                         animation: 150,
                         ghostClass: 'bg-blue-100',
+                        filter: '[data-no-sort]',
+                        preventOnFilter: false,
                         onEnd: (evt) => {
                             $wire.updateTaskStatus(
                                 evt.item.dataset.id, 

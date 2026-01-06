@@ -8,8 +8,6 @@ use App\Models\TaskColumn;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Actions\EditAction;
-use Filament\Forms\Components\Section;
-use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -167,10 +165,39 @@ class ProjectBoard extends Page
         ];
     }
 
+    // Property to store the current task being edited
+    public $editingTaskId = null;
+    public $editingTask = null;
+
     // 1. The method called by Livewire when you click a card
     public function editTask($recordId)
     {
-        $this->mountAction('edit_task', ['record' => $recordId]);
+        try {
+            $task = Task::with('comments.user')->find($recordId);
+            
+            if (!$task) {
+                Notification::make()
+                    ->title('Task not found')
+                    ->danger()
+                    ->send();
+                return;
+            }
+            
+            $this->editingTaskId = $recordId;
+            $this->editingTask = $task;
+            
+            // Mount the action
+            $this->mountAction('edit_task');
+            
+            // Dispatch browser event to ensure modal opens
+            $this->dispatch('open-modal', id: 'edit-task-modal');
+        } catch (\Exception $e) {
+            Notification::make()
+                ->title('Error opening task')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
     }
 
     protected function getActions(): array
@@ -194,54 +221,92 @@ class ProjectBoard extends Page
             //     ->after(function () {
             //         $this->redirect(request()->header('Referer'));
             //     }),
-            EditAction::make('edit_task')
-                ->model(\App\Models\Task::class)
+            Action::make('edit_task')
+                ->label('Edit Task')
+                ->fillForm(function () {
+                    if (!$this->editingTask) {
+                        return [];
+                    }
+                    
+                    return [
+                        'title' => $this->editingTask->title,
+                        'description' => $this->editingTask->description,
+                        'assigned_to' => $this->editingTask->assigned_to,
+                        'task_column_id' => $this->editingTask->task_column_id,
+                    ];
+                })
                 ->form([
                     // --- EXISTING FIELDS ---
                     TextInput::make('title')->required(),
 
                     // Organize Layout
-                    \Filament\Forms\Components\Grid::make(2)->schema([
-                        Select::make('assigned_to')
-                            ->options(\App\Models\User::pluck('name', 'id'))
-                            ->searchable(),
-                        Select::make('task_column_id')
-                            ->label('Status')
-                            ->options(function () {
-                                return \App\Models\TaskColumn::where('project_id', $this->currentProjectId)->pluck('title', 'id');
-                            }),
-                    ]),
+                    Select::make('assigned_to')
+                        ->options(\App\Models\User::pluck('name', 'id'))
+                        ->searchable()
+                        ->columnSpan(1),
+                    Select::make('task_column_id')
+                        ->label('Status')
+                        ->options(function () {
+                            return \App\Models\TaskColumn::where('project_id', $this->currentProjectId)->pluck('title', 'id');
+                        })
+                        ->columnSpan(1),
 
                     Textarea::make('description')->rows(3),
 
-                    // --- NEW COMMENTS SECTION ---
-                    \Filament\Forms\Components\Section::make('Comments')
-                        ->schema([
-                            // 1. List existing comments using our custom view
-                            ViewField::make('comments_list')
-                                ->view('filament.forms.task-comments')
-                                ->hiddenLabel(),
+                    // --- COMMENTS SECTION ---
+                    Placeholder::make('comments_heading')
+                        ->label('Comments')
+                        ->content('')
+                        ->columnSpanFull(),
 
-                            // 2. Box to add a new comment
-                            RichEditor::make('new_comment')
-                                ->label('Add a comment')
-                                ->toolbarButtons(['bold', 'italic', 'link', 'bulletList'])
-                                ->dehydrated(false), // Don't try to save this to the 'tasks' table
-                        ])
-                        ->collapsible(),
+                    // 1. List existing comments using our custom view
+                    ViewField::make('comments_list')
+                        ->view('filament.forms.task-comments')
+                        ->hiddenLabel()
+                        ->columnSpanFull()
+                        ->viewData(fn () => ['record' => $this->editingTask]),
+
+                    // 2. Box to add a new comment
+                    RichEditor::make('new_comment')
+                        ->label('Add a comment')
+                        ->toolbarButtons(['bold', 'italic', 'link', 'bulletList'])
+                        ->dehydrated(false) // Don't try to save this to the 'tasks' table
+                        ->columnSpanFull(),
                 ])
-                ->slideOver()
-                ->modalWidth('2xl')
-                // LOGIC TO SAVE THE COMMENT
-                ->after(function ($record, array $data) {
+                ->modal()
+                ->modalWidth('4xl')
+                ->modalHeading(fn () => 'Edit Task: ' . ($this->editingTask?->title ?? ''))
+                ->action(function (array $data) {
+                    if (!$this->editingTask) {
+                        return;
+                    }
+                    
+                    // Update the task
+                    $this->editingTask->update([
+                        'title' => $data['title'],
+                        'description' => $data['description'] ?? null,
+                        'assigned_to' => $data['assigned_to'] ?? null,
+                        'task_column_id' => $data['task_column_id'],
+                    ]);
+                    
+                    // Save comment if provided
                     if (! empty($data['new_comment'])) {
                         \App\Models\Comment::create([
-                            'task_id' => $record->id,
-                            'user_id' => auth()->id(),
+                            'task_id' => $this->editingTask->id,
+                            'user_id' => \Illuminate\Support\Facades\Auth::id(),
                             'body' => $data['new_comment'],
                         ]);
                     }
-
+                    
+                    // Reset editing state
+                    $this->editingTaskId = null;
+                    $this->editingTask = null;
+                    
+                    Notification::make()
+                        ->title('Task updated successfully')
+                        ->success()
+                        ->send();
+                    
                     // Refresh to show the new comment
                     $this->redirect(request()->header('Referer'));
                 }),
