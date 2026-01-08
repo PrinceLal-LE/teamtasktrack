@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>{{ config('app.name', 'Covsm') }}</title>
+    <title>{{ config('app.name', 'TeamTaskTrack') }}</title>
     <link rel="icon" href="images/favicon.ico">
     <title>Pro-Task | Organize, Track, and Accomplish More. Together.</title>
 
@@ -24,8 +24,8 @@
 
     <!-- Styles / Scripts -->
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
-@vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/dashboardPageScript.js'])
-
+    @vite(['resources/css/app.css','resources/css/dashboardPageStyle.css', 'resources/js/app.js',
+    'resources/js/dashboardPageScript.js'])
     @endif
 </head>
 
@@ -40,9 +40,9 @@
                                 class="text-2xl font-bold text-slate-900 flex items-center group"><img
                                     src="images/Only_Logo.png"
                                     class="h-8 w-auto group-hover:scale-105 transition-transform duration-300"
-                                    alt="COVSM"><span
+                                    alt="TeamTaskTrack"><span
                                     class="ml-2 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent font-vandal transform scale-x-110 tracking-wider text-3xl">
-                                    COVSM </span></a></div>
+                                    TeamTaskTrack </span></a></div>
                         <nav class="hidden md:flex md:items-center md:space-x-8"><a href="#features"
                                 class="text-slate-600 hover:text-indigo-600 font-medium transition-colors duration-200 group">
                                 Features <span

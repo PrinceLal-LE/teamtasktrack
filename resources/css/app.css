@@ -16,3 +16,72 @@
     /* This creates the 'font-vandal' class for Tailwind */
     --font-vandal: "LegalVandal", cursive;
 }
+
+/* Ensure Filament sidebar is properly hidden on mobile when closed */
+@media (max-width: 1023px) {
+    [x-cloak] {
+        display: none !important;
+    }
+    
+    /* Completely hide sidebar on mobile when closed - no narrow strip visible */
+    .fi-sidebar:not(.fi-sidebar-open) {
+        transform: translateX(-100%) !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        width: 0 !important;
+        min-width: 0 !important;
+        max-width: 0 !important;
+        overflow: hidden !important;
+    }
+    
+    /* Ensure sidebar is visible when open on mobile as full overlay */
+    .fi-sidebar.fi-sidebar-open {
+        transform: translateX(0) !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        position: fixed !important;
+        z-index: 50 !important;
+        height: 100vh !important;
+        width: 20rem !important;
+        max-width: 85vw !important;
+        min-width: 0 !important;
+        top: 0 !important;
+        left: 0 !important;
+    }
+    
+    /* Ensure sidebar overlay/backdrop is present and clickable */
+    .fi-sidebar-backdrop {
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 40 !important;
+        background-color: rgba(0, 0, 0, 0.5) !important;
+        display: block !important;
+    }
+    
+    /* Hide backdrop when sidebar is closed */
+    body:not(.fi-sidebar-open) .fi-sidebar-backdrop {
+        display: none !important;
+    }
+    
+    /* Ensure main content doesn't get pushed by sidebar on mobile */
+    .fi-main {
+        margin-left: 0 !important;
+        padding-left: 0 !important;
+    }
+    
+    /* Ensure sidebar overlay closes when clicked outside */
+    .fi-sidebar-overlay {
+        z-index: 40;
+    }
+    
+    /* Ensure sidebar closes on mobile when navigation item is clicked */
+    .fi-sidebar-nav-item {
+        @apply lg:block;
+    }
+    
+    /* Prevent any collapsed sidebar icons from showing on mobile */
+    .fi-sidebar-nav-collapsible,
+    .fi-sidebar-nav-collapsed {
+        display: none !important;
+    }
+}
