@@ -170,7 +170,8 @@ class ProjectBoard extends Page
     
     protected function createTaskForColumnAction(): Action
     {
-        return Action::make('create_task_for_column')
+        return Action::make('createTaskForColumn')
+        // return Action::make('create_task_for_column')
             ->label('Add Task')
             ->icon('heroicon-m-plus')
             ->modal()
@@ -218,7 +219,8 @@ class ProjectBoard extends Page
         // Mount the action - Filament will look for createTaskForColumnAction() method
         // The action must be in getActions() array to be accessible
         try {
-            $this->mountAction('create_task_for_column');
+            // $this->mountAction('create_task_for_column');
+            $this->mountAction('createTaskForColumn');
         } catch (\Exception $e) {
             // If mountAction fails, show error
             Notification::make()
@@ -323,22 +325,22 @@ class ProjectBoard extends Page
             $columns = TaskColumn::where('project_id', $this->currentProjectId)->count();
             
             // Always show "Add Task" button - directly use the action if columns exist, otherwise show warning
-            if ($columns > 0) {
-                // If columns exist, use the create task action directly
-                $actions[] = $this->createTaskAction();
-            } else {
-                // If no columns, show button that triggers warning
-                $actions[] = Action::make('add_task_header')
-                    ->label('Add Task')
-                    ->icon('heroicon-m-plus')
-                    ->action(function () {
-                        $this->dispatch('show-sweet-alert', [
-                            'title' => 'No Columns Found',
-                            'text' => 'Please add columns first before adding tasks.',
-                            'icon' => 'warning',
-                        ]);
-                    });
-            }
+            // if ($columns > 0) {
+            //     // If columns exist, use the create task action directly
+            //     // $actions[] = $this->createTaskAction();
+            // } else {
+            //     // If no columns, show button that triggers warning
+            //     $actions[] = Action::make('add_task_header')
+            //         ->label('Add Task')
+            //         ->icon('heroicon-m-plus')
+            //         ->action(function () {
+            //             $this->dispatch('show-sweet-alert', [
+            //                 'title' => 'No Columns Found',
+            //                 'text' => 'Please add columns first before adding tasks.',
+            //                 'icon' => 'warning',
+            //             ]);
+            //         });
+            // }
             
             // Show "Manage Columns" in header if columns exist
             if ($columns > 0) {
