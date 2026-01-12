@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\SupportTicketController;
 
 Route::get('/', function () {
     return view('home');
@@ -23,3 +24,9 @@ Route::middleware([
         return view('dashboard');
     })->name('dashboard');
 });
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/support', [SupportTicketController::class, 'index']);
+    Route::post('/support', [SupportTicketController::class, 'store']);
+});
+
