@@ -74,10 +74,10 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ])
-            // ADD THIS SECTION:
+            ->sidebarCollapsibleOnDesktop()
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn(): string => Blade::render('@vite("resources/css/app.css")')
+                fn(): string => Blade::render('@vite(["resources/css/app.css", "resources/js/filament-mobile-sidebar.js"])')
             )
             ->path('admin');
     }

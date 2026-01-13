@@ -6,7 +6,6 @@ use App\Models\Project; // Import Project
 use App\Models\Task;
 use App\Models\TaskColumn;
 use Filament\Actions\Action;
-use Filament\Actions\CreateAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
@@ -28,24 +27,56 @@ class ProjectBoard extends Page
     protected static ?string $title = 'Project Board';
 
     // 1. Add this property to track the active project
-    public $currentProjectId;
+    public $currentProjectId = null;
 
-    // 2. Initialize it with the first available project
-    public function mount()
+    // 2. Initialize - don't set a default project, show grid first
+    public function mount(): void
     {
-        $this->currentProjectId = Project::first()?->id;
+        // Check if slug is provided in query parameter
+        $slug = request()->query('slug');
+        if ($slug) {
+            $project = Project::where('slug', $slug)->first();
+            if ($project) {
+                $this->currentProjectId = $project->id;
+            }
+        }
+    }
+
+    public function selectProject($projectId): void
+    {
+        $this->currentProjectId = $projectId;
+        
+        // Get the project slug and update URL with query parameter
+        $project = Project::find($projectId);
+        if ($project && $project->slug) {
+            $url = $this->getUrl() . '?slug=' . urlencode($project->slug);
+            $this->redirect($url, navigate: true);
+        }
+    }
+    
+    public function backToGrid(): void
+    {
+        $this->currentProjectId = null;
+        $this->redirect($this->getUrl(), navigate: true);
     }
 
     public function getViewData(): array
     {
-        // 3. Fetch the data based on the SELECTED project, not just "first()"
-        return [
-            'projects' => Project::all(), // List for the dropdown
-            'columns' => TaskColumn::with(['tasks.assignee'])
+        $data = [
+            'projects' => Project::with('team')->get(),
+            'columns' => collect(), // Empty collection by default
+        ];
+        
+        // Only fetch columns if a project is selected
+        if ($this->currentProjectId) {
+            $data['columns'] = TaskColumn::with(['tasks.assignee'])
                 ->where('project_id', $this->currentProjectId)
                 ->orderBy('sort_order')
-                ->get(),
-        ];
+                ->get();
+            $data['selectedProject'] = Project::find($this->currentProjectId);
+        }
+        
+        return $data;
     }
 
     public function updateTaskStatus($taskId, $newColumnId, $newIndex)
@@ -65,104 +96,259 @@ class ProjectBoard extends Page
         }
     }
 
+    public function checkColumnsBeforeAddTask(): void
+    {
+        if (!$this->currentProjectId) {
+            Notification::make()
+                ->title('No project selected')
+                ->warning()
+                ->send();
+            return;
+        }
+        
+        $columns = TaskColumn::where('project_id', $this->currentProjectId)->count();
+        
+        if ($columns === 0) {
+            // Dispatch event to show sweet alert
+            $this->dispatch('show-sweet-alert', [
+                'title' => 'No Columns Found',
+                'text' => 'Please add columns first before adding tasks.',
+                'icon' => 'warning',
+            ]);
+            return;
+        }
+        
+        // If columns exist, mount the create task action
+        try {
+            $this->mountAction('create_task');
+        } catch (\Exception $e) {
+            Notification::make()
+                ->title('Error opening task form')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+    
+    protected function createTaskAction(): Action
+    {
+        return Action::make('create_task')
+            ->label('Add Task')
+            ->icon('heroicon-m-plus')
+            ->modal()
+            ->modalHeading('Add New Task')
+            ->form([
+                TextInput::make('title')->required(),
+                Textarea::make('description'),
+                Select::make('assigned_to')
+                    ->options(\App\Models\User::pluck('name', 'id'))
+                    ->searchable(),
+                Select::make('task_column_id')
+                    ->label('Status')
+                    ->options(function () {
+                        return TaskColumn::where('project_id', $this->currentProjectId)->pluck('title', 'id');
+                    })
+                    ->required()
+                    ->default(function () {
+                        return TaskColumn::where('project_id', $this->currentProjectId)
+                            ->orderBy('sort_order')
+                            ->first()?->id;
+                    }),
+            ])
+            ->action(function (array $data) {
+                $data['project_id'] = $this->currentProjectId;
+                Task::create($data);
+                
+                Notification::make()
+                    ->title('Task created successfully')
+                    ->success()
+                    ->send();
+            });
+    }
+    
+    public $columnIdForTask = null;
+    
+    protected function createTaskForColumnAction(): Action
+    {
+        return Action::make('createTaskForColumn')
+        // return Action::make('create_task_for_column')
+            ->label('Add Task')
+            ->icon('heroicon-m-plus')
+            ->modal()
+            ->modalHeading('Add New Task')
+            ->fillForm(function () {
+                return [
+                    'task_column_id' => $this->columnIdForTask,
+                ];
+            })
+            ->form([
+                TextInput::make('title')->required(),
+                Textarea::make('description'),
+                Select::make('assigned_to')
+                    ->options(\App\Models\User::pluck('name', 'id'))
+                    ->searchable(),
+                Hidden::make('task_column_id')
+                    ->required(),
+            ])
+            ->action(function (array $data) {
+                $data['project_id'] = $this->currentProjectId;
+                $data['task_column_id'] = $this->columnIdForTask;
+                Task::create($data);
+                
+                $this->columnIdForTask = null;
+                
+                Notification::make()
+                    ->title('Task created successfully')
+                    ->success()
+                    ->send();
+            });
+    }
+    
+    public function addTaskToColumn($columnId): void
+    {
+        if (!$this->currentProjectId) {
+            Notification::make()
+                ->title('No project selected')
+                ->warning()
+                ->send();
+            return;
+        }
+        
+        $this->columnIdForTask = $columnId;
+        
+        // Mount the action - Filament will look for createTaskForColumnAction() method
+        // The action must be in getActions() array to be accessible
+        try {
+            // $this->mountAction('create_task_for_column');
+            $this->mountAction('createTaskForColumn');
+        } catch (\Exception $e) {
+            // If mountAction fails, show error
+            Notification::make()
+                ->title('Error')
+                ->body('Could not open task form: ' . $e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+    
+    public function openManageColumns(): void
+    {
+        $this->mountAction('manageColumns');
+    }
+
+    protected function manageColumnsAction(): Action
+    {
+        return Action::make('manageColumns')
+            ->label('Manage Columns')
+            ->icon('heroicon-m-cog-6-tooth')
+            ->slideOver()
+            ->fillForm(function () {
+                $project = Project::find($this->currentProjectId);
+                return [
+                    'columns' => $project ? $project->columns->toArray() : [],
+                ];
+            })
+            ->form([
+                Repeater::make('columns')
+                    ->label('Board Columns')
+                    ->addActionLabel('Add New Column')
+                    ->schema([
+                        Hidden::make('id'),
+                        TextInput::make('title')->required(),
+                    ])
+                    ->orderable()
+                    ->itemLabel(fn (array $state): ?string => $state['title'] ?? null),
+            ])
+            ->action(function (array $data) {
+                $project = Project::find($this->currentProjectId);
+                if (! $project) {
+                    return;
+                }
+
+                $submittedColumns = collect($data['columns']);
+                $submittedIds = $submittedColumns->pluck('id')->filter(fn ($id) => is_numeric($id))->toArray();
+
+                // Delete removed columns
+                TaskColumn::where('project_id', $project->id)
+                    ->whereNotIn('id', $submittedIds)
+                    ->delete();
+
+                // Update or Create
+                foreach ($submittedColumns as $index => $columnData) {
+                    $id = $columnData['id'] ?? null;
+
+                    if ($id && is_numeric($id)) {
+                        TaskColumn::where('id', $id)->update([
+                            'title' => $columnData['title'],
+                            'sort_order' => $index + 1,
+                        ]);
+                    } else {
+                        TaskColumn::create([
+                            'project_id' => $project->id,
+                            'title' => $columnData['title'],
+                            'sort_order' => $index + 1,
+                        ]);
+                    }
+                }
+
+                Notification::make()->title('Board updated')->success()->send();
+                $this->redirect(request()->header('Referer'));
+            });
+    }
+
+    protected function getActions(): array
+    {
+        $actions = [
+            $this->createTaskForColumnAction(),
+            $this->manageColumnsAction(),
+            $this->editTaskAction(),
+        ];
+        
+        // Always include createTaskAction - it will only work if project is selected
+        $actions[] = $this->createTaskAction();
+        
+        return $actions;
+    }
+
     protected function getHeaderActions(): array
     {
-        return [
-            // 1. ADD TASK ACTION
-            CreateAction::make('create_task')
-                ->label('Add Task')
-                ->icon('heroicon-m-plus')
-                ->model(Task::class)
-                ->form([
-                    TextInput::make('title')->required(),
-                    Textarea::make('description'),
-                    Select::make('assigned_to')
-                        ->options(\App\Models\User::pluck('name', 'id'))
-                        ->searchable(),
-                    Select::make('task_column_id')
-                        ->label('Status')
-                        // Only show columns for the CURRENT project
-                        ->options(function () {
-                            return TaskColumn::where('project_id', $this->currentProjectId)->pluck('title', 'id');
-                        })
-                        ->required()
-                        ->default(function () {
-                            // Default to the first column (e.g., "To Do")
-                            return TaskColumn::where('project_id', $this->currentProjectId)
-                                ->orderBy('sort_order')
-                                ->first()?->id;
-                        }),
-                ])
-                ->mutateFormDataUsing(function (array $data) {
-                    // Force the task to belong to the currently selected project
-                    $data['project_id'] = $this->currentProjectId;
-
-                    return $data;
-                })
-                ->after(function () {
-                    // Refresh the board after creating a task
-                    $this->redirect(request()->header('Referer'));
-                }),
-            Action::make('manage_columns')
-                ->label('Manage Columns')
-                ->icon('heroicon-m-cog-6-tooth')
-                ->slideOver()
-                ->fillForm(function () {
-                    // 4. Load columns for the CURRENTLY selected project
-                    $project = Project::find($this->currentProjectId);
-
-                    return [
-                        'columns' => $project ? $project->columns->toArray() : [],
-                    ];
-                })
-                ->form([
-                    Repeater::make('columns')
-                        ->label('Board Columns')
-                        ->addActionLabel('Add New Column')
-                        ->schema([
-                            Hidden::make('id'),
-                            TextInput::make('title')->required(),
-                        ])
-                        ->orderable()
-                        ->itemLabel(fn (array $state): ?string => $state['title'] ?? null),
-                ])
-                ->action(function (array $data) {
-                    // 5. Use the selected project ID
-                    $project = Project::find($this->currentProjectId);
-                    if (! $project) {
-                        return;
-                    }
-
-                    $submittedColumns = collect($data['columns']);
-                    $submittedIds = $submittedColumns->pluck('id')->filter(fn ($id) => is_numeric($id))->toArray();
-
-                    // Delete removed columns
-                    TaskColumn::where('project_id', $project->id)
-                        ->whereNotIn('id', $submittedIds)
-                        ->delete();
-
-                    // Update or Create
-                    foreach ($submittedColumns as $index => $columnData) {
-                        $id = $columnData['id'] ?? null;
-
-                        if ($id && is_numeric($id)) {
-                            TaskColumn::where('id', $id)->update([
-                                'title' => $columnData['title'],
-                                'sort_order' => $index + 1,
-                            ]);
-                        } else {
-                            TaskColumn::create([
-                                'project_id' => $project->id, // Uses the active project ID
-                                'title' => $columnData['title'],
-                                'sort_order' => $index + 1,
-                            ]);
-                        }
-                    }
-
-                    Notification::make()->title('Board updated')->success()->send();
-                    $this->redirect(request()->header('Referer'));
-                }),
-        ];
+        $actions = [];
+        
+        // Show back button if viewing a project board
+        if ($this->currentProjectId) {
+            $actions[] = Action::make('back_to_grid')
+                ->label('Back to Projects')
+                ->icon('heroicon-m-arrow-left')
+                ->color('gray')
+                ->action('backToGrid');
+            
+            $columns = TaskColumn::where('project_id', $this->currentProjectId)->count();
+            
+            // Always show "Add Task" button - directly use the action if columns exist, otherwise show warning
+            // if ($columns > 0) {
+            //     // If columns exist, use the create task action directly
+            //     // $actions[] = $this->createTaskAction();
+            // } else {
+            //     // If no columns, show button that triggers warning
+            //     $actions[] = Action::make('add_task_header')
+            //         ->label('Add Task')
+            //         ->icon('heroicon-m-plus')
+            //         ->action(function () {
+            //             $this->dispatch('show-sweet-alert', [
+            //                 'title' => 'No Columns Found',
+            //                 'text' => 'Please add columns first before adding tasks.',
+            //                 'icon' => 'warning',
+            //             ]);
+            //         });
+            // }
+            
+            // Show "Manage Columns" in header if columns exist
+            if ($columns > 0) {
+                $actions[] = $this->manageColumnsAction();
+            }
+        }
+        
+        return $actions;
     }
 
     // Property to store the task being edited

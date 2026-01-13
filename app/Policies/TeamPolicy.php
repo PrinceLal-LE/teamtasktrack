@@ -1,57 +1,70 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Policies;
 
-use App\Models\User;
+use Illuminate\Foundation\Auth\User as AuthUser;
 use App\Models\Team;
+use Illuminate\Auth\Access\HandlesAuthorization;
 
 class TeamPolicy
 {
-    public function viewAny(User $user): bool
+    use HandlesAuthorization;
+    
+    public function viewAny(AuthUser $authUser): bool
     {
-        return true;
+        return $authUser->can('ViewAny:Team');
     }
 
-    public function view(User $user, Team $team): bool
+    public function view(AuthUser $authUser, Team $team): bool
     {
-        // Admin can access any team
-        if ($user->hasRole('Admin')) return true;
-
-        // Team Lead can only access teams they own
-        if ($user->hasRole('Team Lead')) {
-            return $user->ownsTeam($team);
-        }
-
-        // Developer and Staff can only access teams they belong to
-        if ($user->hasAnyRole(['Developer', 'Staff'])) {
-            return $team->hasUser($user);
-        }
-
-        return false;
+        return $authUser->can('View:Team');
     }
 
-    public function update(User $user, Team $team): bool
+    public function create(AuthUser $authUser): bool
     {
-        if ($user->hasRole('Admin')) return true;
-
-        return $team->users()
-            ->where('users.id', $user->id)
-            ->wherePivot('role', 'Team Lead')
-            ->exists();
+        return $authUser->can('Create:Team');
     }
 
-    public function delete(User $user, Team $team): bool
+    public function update(AuthUser $authUser, Team $team): bool
     {
-        return $this->update($user, $team);
+        return $authUser->can('Update:Team');
     }
 
-    public function manageMembers(User $user, Team $team): bool
+    public function delete(AuthUser $authUser, Team $team): bool
     {
-        if ($user->hasRole('Admin')) return true;
-
-        return $team->users()
-            ->where('users.id', $user->id)
-            ->wherePivot('role', 'Team Lead')
-            ->exists();
+        return $authUser->can('Delete:Team');
     }
+
+    public function restore(AuthUser $authUser, Team $team): bool
+    {
+        return $authUser->can('Restore:Team');
+    }
+
+    public function forceDelete(AuthUser $authUser, Team $team): bool
+    {
+        return $authUser->can('ForceDelete:Team');
+    }
+
+    public function forceDeleteAny(AuthUser $authUser): bool
+    {
+        return $authUser->can('ForceDeleteAny:Team');
+    }
+
+    public function restoreAny(AuthUser $authUser): bool
+    {
+        return $authUser->can('RestoreAny:Team');
+    }
+
+    public function replicate(AuthUser $authUser, Team $team): bool
+    {
+        return $authUser->can('Replicate:Team');
+    }
+
+    public function reorder(AuthUser $authUser): bool
+    {
+        return $authUser->can('Reorder:Team');
+    }
+
 }
