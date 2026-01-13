@@ -21,7 +21,7 @@
             </div>
         </div>
     </section>
-    <section class="hero-after-section sec_shadow">
+    <section class="hero-after-section sec_shadow section_padding" id="features">
         <div class="container position-relative z-1">
             <div class="hero-after-card p-5">
                 <h2 class="display-5 fw-bold mb-3 text-center font-44">
