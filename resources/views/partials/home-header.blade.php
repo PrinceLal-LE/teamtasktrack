@@ -210,8 +210,8 @@
                         <a class="nav-link" href="#features">Features</a>
                         <a class="nav-link" href="#views">Views</a>
                         <a class="nav-link" href="#time-tracking">Time Tracking</a>
-                        <a class="nav-link" href="#Team">Team</a>
-                        <a class="nav-link" href="#review">Review</a>
+                        <a class="nav-link" href="#teams">Team</a>
+                        <a class="nav-link" href="#reviews">Review</a>
                     </div>
                     <div class="nav-actions ms-md-auto">
                         <a class="btn btn-outline-secondary nav-btn" href="#demo">

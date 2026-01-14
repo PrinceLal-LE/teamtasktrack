@@ -21,9 +21,9 @@
             </div>
         </div>
     </section>
-    <section class="hero-after-section sec_shadow">
+    <section class="hero-after-section sec_shadow section_padding" id="features">
         <div class="container position-relative z-1">
-            <div class="hero-after-card p-5">
+            <div class="hero-after-card">
                 <h2 class="display-5 fw-bold mb-3 text-center font-44">
                     Everything <span class="gradient-text">your team needs</span> to stay aligned
                 </h2>
@@ -92,7 +92,7 @@
     </section>
     
     {{-- How it works --}}
-    <section class="how-steps-section sec_shadow">
+    <section class="how-steps-section section_padding" id="views">
         <div class="container position-relative z-1">
             <div class="text-center mb-4">
                 <h2 class="how-title mb-2 font-44">How <span class="gradient-text">TEAMTASKTRACK</span> works</h2>
@@ -148,7 +148,7 @@
     </section>
 
     {{-- Deliver faster section --}}
-    <section class="deliver-section home-hero">
+    <section class="deliver-section section_padding" id="time-tracking">
         <div class="container">
             <div class="row align-items-center g-4">
                 <div class="col-lg-5">
@@ -157,21 +157,21 @@
                         <p class="deliver-lede">Empower your team with intuitive tools to manage tasks, timelines, and communication all in one place.</p>
                         <ul class="feature-list">
                             <li>
-                                <span class="icon">âœ“</span>
+                                <span class="icon">&#x2713;</span>
                                 <div>
                                     <strong>Easy Task Management</strong>
                                     <p>Organize tasks with simple drag-and-drop boards and lists.</p>
                                 </div>
                             </li>
                             <li>
-                                <span class="icon">âœ“</span>
+                                <span class="icon">&#x2713;</span>
                                 <div>
                                     <strong>Stay on Track</strong>
                                     <p>Visualize project timeline, set deadlines, and monitor progress.</p>
                                 </div>
                             </li>
                             <li>
-                                <span class="icon">âœ“</span>
+                                <span class="icon">&#x2713;</span>
                                 <div>
                                     <strong>Collaborate Effortlessly</strong>
                                     <p>Get real-time updates, comments, and notifications.</p>
@@ -191,7 +191,7 @@
     </section>
 
     {{-- Teams section --}}
-    <section class="teams-section ">
+    <section class="teams-section section_padding" id="teams">
         <div class="container position-relative z-1">
             <div class="text-center mb-4">
                 <h2 class="teams-title font-44">Prefect for all <span class="gradient-text ">teams</span></h2>
@@ -239,7 +239,7 @@
     </section>
 
     {{-- Testimonials section --}}
-    <section class="testimonials-section">
+    <section class="testimonials-section section_padding" id="reviews">
         <div class="container position-relative z-1">
             <div class="text-center mb-4">
                 <h2 class="testimonials-title font-44">What teams say about <span class="gradient-text">TEAMTASKTRACK</span></h2>
@@ -249,7 +249,7 @@
                 <div class="col-12 col-md-4">
                     <div class="testimonial-card">
                         <div class="stars">★★★★★</div>
-                        <p>â€œWe tried multiple project tools, but TEAMTASKTRACK is the only one that feels visual and intuitive. Our team adopted it instantly.â€</p>
+                        <p>"We tried multiple project tools, but TEAMTASKTRACK is the only one that feels visual and intuitive. Our team adopted it instantly."</p>
                         <div class="testimonial-person">
                             <img src="/assets/images/avatar-1.jpg" alt="Aarav Mehta" class="rounded-circle">
                             <div>
@@ -262,7 +262,7 @@
                 <div class="col-12 col-md-4">
                     <div class="testimonial-card">
                         <div class="stars">★★★★★</div>
-                        <p>â€œTime tracking inside tasks is a game-changer. We no longer switch tools, and productivity has gone up.â€</p>
+                        <p>"Time tracking inside tasks is a game-changer. We no longer switch tools, and productivity has gone up."</p>
                         <div class="testimonial-person">
                             <img src="/assets/images/avatar-2.jpg" alt="Lila Chen" class="rounded-circle">
                             <div>
@@ -275,7 +275,7 @@
                 <div class="col-12 col-md-4">
                     <div class="testimonial-card">
                         <div class="stars">★★★★★</div>
-                        <p>â€œTEAMTASKTRACK keeps everyone alignedâ€”tasks, timelines, and progress are crystal clear.â€</p>
+                        <p>"TEAMTASKTRACK keeps everyone aligned—tasks, timelines, and progress are crystal clear."</p>
                         <div class="testimonial-person">
                             <img src="/assets/images/avatar-3.png" alt="Jamal Patel" class="rounded-circle">
                             <div>
@@ -296,7 +296,7 @@
             <div class="row">
                 <div class="col-lg-12">
                     <span class="cta-kicker">TEAMTASKTRACK</span>
-                    <h2 class="cta-title font-44">Ready to manage projects visually?</h2>
+                    <h2 class="cta-title">Ready to manage projects visually?</h2>
                      <p class="cta-subtitle">Bring clarity to your workflow, collaborate with your team, and deliver work faster <br> â€” all in one place.</p>
                      <a class="btn btn-gradient-white" href="{{ route('register') }}"><span class="btn-text-gradient">Get started free</span></a>
                 </div>
@@ -381,6 +381,5 @@
             </div>
         </div>
     </section>
-
     @include('partials.home-footer')
 

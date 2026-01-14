@@ -78,6 +78,11 @@ class User extends Authenticatable
     {
         // For a quick fix, return true to allow everyone
         // For production, check for specific emails or roles
-        return true; 
+        return true;
+    }
+
+    public function supportTickets()
+    {
+        return $this->hasMany(SupportTicket::class);
     }
 }
