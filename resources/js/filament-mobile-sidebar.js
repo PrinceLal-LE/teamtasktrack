@@ -153,18 +153,72 @@
         });
     }
     
+    // Remove inline styles from Filament widget wrapper (fi-sc, fi-grid)
+    function removeWidgetInlineStyles() {
+        // Find all widget wrappers with inline styles
+        const widgetWrappers = document.querySelectorAll('.fi-sc.fi-grid[style*="--cols-lg"], .fi-sc.fi-sc-has-gap.fi-grid[style*="--cols-lg"]');
+        
+        widgetWrappers.forEach(function(wrapper) {
+            // Check if this wrapper contains stats cards
+            if (wrapper.querySelector('.fi-widget-stats-cards')) {
+                // Remove the inline style attribute completely
+                wrapper.removeAttribute('style');
+            }
+        });
+    }
+    
     // Initialize when DOM is ready
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('DOMContentLoaded', function() {
+            init();
+            // Remove inline styles after DOM is ready
+            setTimeout(removeWidgetInlineStyles, 200);
+        });
     } else {
         // DOM already loaded, wait a bit for Alpine.js
-        setTimeout(init, 100);
+        setTimeout(function() {
+            init();
+            removeWidgetInlineStyles();
+        }, 100);
     }
     
     // Also initialize when Alpine.js is ready (if available)
     if (window.Alpine) {
         window.Alpine.plugin(function(Alpine) {
-            Alpine.nextTick(init);
+            Alpine.nextTick(function() {
+                init();
+                removeWidgetInlineStyles();
+            });
+        });
+    }
+    
+    // Remove inline styles when Livewire updates (for dynamic content)
+    if (window.Livewire) {
+        document.addEventListener('livewire:load', removeWidgetInlineStyles);
+        document.addEventListener('livewire:update', removeWidgetInlineStyles);
+    }
+    
+    // Use MutationObserver to watch for dynamically added elements
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.addedNodes.length) {
+                setTimeout(removeWidgetInlineStyles, 100);
+            }
+        });
+    });
+    
+    // Start observing when DOM is ready
+    if (document.body) {
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+    } else {
+        document.addEventListener('DOMContentLoaded', function() {
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
         });
     }
 })();

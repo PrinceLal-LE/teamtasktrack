@@ -2,8 +2,196 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Blinker Font Family - Same as Home Page */
+@font-face {
+    font-family: 'Blinker';
+    src: url('../../public/assets/font/Blinker-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Blinker';
+    src: url('../../public/assets/font/Blinker-SemiBold.ttf') format('truetype');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Blinker';
+    src: url('../../public/assets/font/Blinker-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* Apply Blinker Font to Entire Dashboard */
+body,
+body *,
+.fi-body,
+.fi-body *,
+.fi-main,
+.fi-main *,
+.fi-sidebar,
+.fi-sidebar *,
+.fi-header,
+.fi-header *,
+.fi-page,
+.fi-page *,
+.fi-widget,
+.fi-widget *,
+.fi-resource,
+.fi-resource *,
+.fi-table,
+.fi-table *,
+.fi-form,
+.fi-form *,
+.fi-modal,
+.fi-modal *,
+.fi-notification,
+.fi-notification *,
+.fi-dropdown,
+.fi-dropdown *,
+.fi-badge,
+.fi-badge *,
+.fi-button,
+.fi-button *,
+.fi-input,
+.fi-input *,
+.fi-select,
+.fi-select *,
+.fi-textarea,
+.fi-textarea *,
+.fi-label,
+.fi-label *,
+.fi-hint,
+.fi-hint *,
+.fi-error-message,
+.fi-error-message *,
+.fi-section,
+.fi-section * {
+    font-family: 'Blinker', system-ui, -apple-system, sans-serif !important;
+}
+
 [x-cloak] {
     display: none;
+}
+
+/* Filament Sidebar Background Gradient */
+.fi-sidebar {
+    background: linear-gradient(90deg, #4F46E5 0%, #9333EA 85.24%) !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+/* Sidebar Footer - Position at bottom */
+.fi-sidebar-footer {
+    margin-top: auto;
+    padding: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Sidebar Item Label - Default White Color */
+.fi-sidebar-item-label {
+    color: #FFFFFF !important;
+}
+
+/* Sidebar Item Icon - Default White Color */
+.fi-sidebar-item-btn > .fi-icon {
+    color: #FFFFFF !important;
+}
+
+/* Active and Hover Menu Items - Background White */
+.fi-sidebar-nav-item-active,
+.fi-sidebar-nav-item[aria-current="page"],
+.fi-sidebar-nav-item:hover,
+.fi-sidebar-nav-item.fi-active,
+.fi-sidebar-nav-item[data-active="true"],
+a.fi-sidebar-nav-item[aria-current="page"],
+a.fi-sidebar-nav-item:hover {
+    background-color: #FFFFFF !important;
+    border-radius: 0.5rem;
+    margin: 0.25rem 0;
+}
+
+/* Active and Hover Menu Items - Text Gradient */
+.fi-sidebar-nav-item-active .fi-sidebar-nav-item-label,
+.fi-sidebar-nav-item[aria-current="page"] .fi-sidebar-nav-item-label,
+.fi-sidebar-nav-item:hover .fi-sidebar-nav-item-label,
+.fi-sidebar-nav-item.fi-active .fi-sidebar-nav-item-label,
+.fi-sidebar-nav-item[data-active="true"] .fi-sidebar-nav-item-label,
+a.fi-sidebar-nav-item[aria-current="page"] .fi-sidebar-nav-item-label,
+a.fi-sidebar-nav-item:hover .fi-sidebar-nav-item-label {
+    background: linear-gradient(90deg, #4F46E5 0%, #9333EA 85.24%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent !important;
+}
+
+/* Icon color for active/hover items */
+.fi-sidebar-nav-item-active .fi-sidebar-nav-item-icon,
+.fi-sidebar-nav-item[aria-current="page"] .fi-sidebar-nav-item-icon,
+.fi-sidebar-nav-item:hover .fi-sidebar-nav-item-icon,
+.fi-sidebar-nav-item.fi-active .fi-sidebar-nav-item-icon,
+.fi-sidebar-nav-item[data-active="true"] .fi-sidebar-nav-item-icon {
+    color: #4F46E5 !important;
+}
+
+/* SVG icons gradient effect */
+.fi-sidebar-nav-item-active svg,
+.fi-sidebar-nav-item[aria-current="page"] svg,
+.fi-sidebar-nav-item:hover svg,
+.fi-sidebar-nav-item.fi-active svg,
+.fi-sidebar-nav-item[data-active="true"] svg,
+a.fi-sidebar-nav-item[aria-current="page"] svg,
+a.fi-sidebar-nav-item:hover svg {
+    color: #4F46E5 !important;
+    fill: #4F46E5 !important;
+}
+
+/* Target specific Filament sidebar item label with gradient text */
+.fi-sidebar-item.fi-active > .fi-sidebar-item-btn > .fi-sidebar-item-label,
+.fi-sidebar-item:hover > .fi-sidebar-item-btn > .fi-sidebar-item-label {
+    background: linear-gradient(90deg, #4F46E5 0%, #9333EA 85.24%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent !important;
+}
+
+/* Active/Hover Icon Color - Gradient Color */
+.fi-sidebar-item.fi-active > .fi-sidebar-item-btn > .fi-icon,
+.fi-sidebar-item:hover > .fi-sidebar-item-btn > .fi-icon {
+    color: #4F46E5 !important;
+}
+
+/* Logout Button Styling - Inside Navigation */
+.fi-sidebar-item form button.fi-sidebar-item-btn {
+    width: 100%;
+    text-align: left;
+}
+
+.fi-sidebar-item form button.fi-sidebar-item-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.fi-sidebar-item form button.fi-sidebar-item-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Ensure logout button has same styling as other nav items */
+.fi-sidebar-item form button.fi-sidebar-item-btn:hover .fi-sidebar-item-label {
+    background: linear-gradient(90deg, #4F46E5 0%, #9333EA 85.24%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent !important;
+}
+
+.fi-sidebar-item form button.fi-sidebar-item-btn:hover .fi-icon {
+    color: #4F46E5 !important;
 }
 
 @font-face {
@@ -84,4 +272,195 @@
     .fi-sidebar-nav-collapsed {
         display: none !important;
     }
+}
+
+/* Stats Cards Widget Styling - Full Width & Equal Size */
+.fi-widget-stats-cards {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Remove inline styles from Filament widget wrapper (fi-sc, fi-grid) */
+/* Target widget wrapper that contains stats cards */
+.fi-widget:has(.fi-widget-stats-cards) .fi-sc.fi-sc-has-gap.fi-grid,
+.fi-widget:has(.fi-widget-stats-cards) .fi-sc.fi-grid,
+.fi-widget[data-widget="App\\Filament\\Widgets\\StatsCards"] .fi-sc.fi-grid,
+.fi-widget[data-widget="App\\Filament\\Widgets\\StatsCards"] .fi-sc.fi-sc-has-gap.fi-grid {
+    --cols-lg: unset !important;
+    --cols-default: unset !important;
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+}
+
+@media (min-width: 640px) {
+    .fi-widget:has(.fi-widget-stats-cards) .fi-sc.fi-sc-has-gap.fi-grid,
+    .fi-widget:has(.fi-widget-stats-cards) .fi-sc.fi-grid,
+    .fi-widget[data-widget="App\\Filament\\Widgets\\StatsCards"] .fi-sc.fi-grid,
+    .fi-widget[data-widget="App\\Filament\\Widgets\\StatsCards"] .fi-sc.fi-sc-has-gap.fi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+@media (min-width: 1024px) {
+    .fi-widget:has(.fi-widget-stats-cards) .fi-sc.fi-sc-has-gap.fi-grid,
+    .fi-widget:has(.fi-widget-stats-cards) .fi-sc.fi-grid,
+    .fi-widget[data-widget="App\\Filament\\Widgets\\StatsCards"] .fi-sc.fi-grid,
+    .fi-widget[data-widget="App\\Filament\\Widgets\\StatsCards"] .fi-sc.fi-sc-has-gap.fi-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    }
+}
+
+/* Ensure parent widget container is full width and override CSS variables */
+.fi-widget[data-widget="stats-cards"],
+.fi-widget[data-widget="App\\Filament\\Widgets\\StatsCards"],
+.fi-widget:has(.fi-widget-stats-cards) {
+    width: 100% !important;
+    max-width: 100% !important;
+    /* Override any CSS variables */
+    --cols-lg: unset !important;
+    --cols-default: unset !important;
+}
+
+/* Override Filament's default widget grid styling */
+.fi-widget-stats-cards,
+.fi-widget-stats-cards * {
+    --cols-lg: unset !important;
+    --cols-default: unset !important;
+}
+
+/* Ensure grid takes full width and equal heights - Override any CSS variables */
+.fi-widget-stats-cards .grid {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: grid !important;
+    grid-auto-rows: 1fr !important; /* Equal height rows */
+    /* Override any CSS variables from Filament */
+    --cols-lg: unset !important;
+    --cols-default: unset !important;
+    /* Use explicit grid template columns */
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+}
+
+/* Override for small screens */
+@media (min-width: 640px) {
+    .fi-widget-stats-cards .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+/* Override for large screens - 4 columns */
+@media (min-width: 1024px) {
+    .fi-widget-stats-cards .grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    }
+}
+
+/* Equal height for all grid items */
+.fi-widget-stats-cards .grid > * {
+    display: flex;
+    min-height: 100%;
+}
+
+.fi-widget-stats-cards .stats-card {
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    height: 100%;
+    min-height: 100px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex: 1;
+}
+
+.fi-widget-stats-cards .stats-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .fi-widget-stats-cards .stats-card {
+        min-height: 90px;
+        padding: 0.875rem;
+    }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+    .fi-widget-stats-cards .stats-card {
+        min-height: 100px;
+    }
+}
+
+@media (min-width: 1025px) {
+    .fi-widget-stats-cards .stats-card {
+        min-height: 110px;
+    }
+}
+
+/* Recent Team Activity Widget Styling */
+.fi-widget-recent-activity {
+    background: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.fi-widget-recent-activity .tab-button {
+    transition: all 0.2s ease-in-out;
+}
+
+.fi-widget-recent-activity .activity-item {
+    transition: background-color 0.2s ease-in-out;
+}
+
+.fi-widget-recent-activity .activity-item:hover {
+    background-color: rgba(249, 250, 251, 0.5);
+    border-radius: 0.5rem;
+    margin: 0 -0.5rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+}
+
+/* Task Completed Chart Widget Styling */
+.fi-widget-task-chart {
+    background: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    font-family: 'Blinker', system-ui, -apple-system, sans-serif;
+}
+
+.fi-widget-task-chart h3 {
+    font-family: 'Blinker', system-ui, -apple-system, sans-serif;
+    font-weight: 600;
+}
+
+.fi-widget-task-chart .text-sm {
+    font-family: 'Blinker', system-ui, -apple-system, sans-serif;
+}
+
+/* Stat Cards in Chart Widget */
+.fi-widget-task-chart .bg-white.rounded-lg.shadow-md {
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.fi-widget-task-chart .bg-white.rounded-lg.shadow-md:hover {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    transform: translateY(-2px);
+}
+
+.fi-widget-task-chart .text-3xl {
+    font-family: 'Blinker', system-ui, -apple-system, sans-serif;
+    font-weight: 700;
+}
+
+.fi-widget-task-chart .text-base {
+    font-family: 'Blinker', system-ui, -apple-system, sans-serif;
+    font-weight: 600;
+}
+
+.fi-widget-task-chart .text-sm {
+    font-family: 'Blinker', system-ui, -apple-system, sans-serif;
+    font-weight: 400;
 }

@@ -20,7 +20,7 @@ use Filament\Pages\Page;
 
 class ProjectBoard extends Page
 {
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-view-columns';
 
     protected string $view = 'filament.pages.project-board';
 
