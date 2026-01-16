@@ -7,6 +7,7 @@ use App\Models\Task;
 use App\Models\TaskColumn;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
@@ -20,14 +21,25 @@ use Filament\Pages\Page;
 
 class ProjectBoard extends Page
 {
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-view-columns';
 
     protected string $view = 'filament.pages.project-board';
 
     protected static ?string $title = 'Project Board';
+    
+    protected static string|\UnitEnum|null $navigationGroup = 'Project Board';
+    
+    protected static ?int $navigationSort = 1;
 
     // 1. Add this property to track the active project
     public $currentProjectId = null;
+    
+    // Helper method to check if user can manage priority
+    protected function canManagePriority(): bool
+    {
+        $user = \Illuminate\Support\Facades\Auth::user();
+        return $user && ($user->hasRole('Admin') || $user->hasRole('Team Lead'));
+    }
 
     // 2. Initialize - don't set a default project, show grid first
     public function mount(): void
@@ -39,6 +51,13 @@ class ProjectBoard extends Page
             if ($project) {
                 $this->currentProjectId = $project->id;
             }
+        }
+        
+        // Check if editTask parameter is provided (from On Schedule/Delayed pages)
+        $editTaskId = request()->query('editTask');
+        if ($editTaskId && $this->currentProjectId) {
+            // Open edit modal after mount completes
+            $this->dispatch('open-task-edit', taskId: $editTaskId);
         }
     }
 
@@ -69,10 +88,35 @@ class ProjectBoard extends Page
         
         // Only fetch columns if a project is selected
         if ($this->currentProjectId) {
-            $data['columns'] = TaskColumn::with(['tasks.assignee'])
+            $columns = TaskColumn::with(['tasks.assignee'])
                 ->where('project_id', $this->currentProjectId)
                 ->orderBy('sort_order')
                 ->get();
+            
+            // Only show Priority column if user can manage priority
+            if ($this->canManagePriority()) {
+                // Get all high priority tasks
+                $highPriorityTasks = Task::where('project_id', $this->currentProjectId)
+                    ->where('priority', 'high')
+                    ->with('assignee')
+                    ->orderBy('sort_order')
+                    ->get();
+                
+                // Always create a virtual Priority column (even if empty)
+                $priorityColumn = new \stdClass();
+                $priorityColumn->id = 'priority';
+                $priorityColumn->title = 'Priority';
+                $priorityColumn->project_id = $this->currentProjectId;
+                $priorityColumn->sort_order = 0;
+                $priorityColumn->tasks = $highPriorityTasks; // Will be empty collection if no high priority tasks
+                $priorityColumn->is_priority = true; // Flag to identify this is the priority column
+                
+                // Add Priority column at the beginning
+                $data['columns'] = collect([$priorityColumn])->merge($columns);
+            } else {
+                $data['columns'] = $columns;
+            }
+            
             $data['selectedProject'] = Project::find($this->currentProjectId);
         }
         
@@ -84,10 +128,30 @@ class ProjectBoard extends Page
         $task = Task::find($taskId);
 
         if ($task) {
-            $task->update([
-                'task_column_id' => $newColumnId,
-                'sort_order' => $newIndex,
-            ]);
+            // If moving to Priority column (virtual), check permission first
+            if ($newColumnId === 'priority') {
+                if (!$this->canManagePriority()) {
+                    Notification::make()
+                        ->title('Permission Denied')
+                        ->body('Only Admin and Team Lead can mark tasks as priority.')
+                        ->danger()
+                        ->send();
+                    return;
+                }
+                $task->update([
+                    'priority' => 'high',
+                    'sort_order' => $newIndex,
+                    // Keep the original task_column_id, Priority is virtual
+                ]);
+            } else {
+                // Moving to a regular column
+                // If task was high priority and moving away from Priority column,
+                // we keep the priority but update the column
+                $task->update([
+                    'task_column_id' => $newColumnId,
+                    'sort_order' => $newIndex,
+                ]);
+            }
 
             Notification::make()
                 ->title('Saved')
@@ -143,6 +207,44 @@ class ProjectBoard extends Page
                 Select::make('assigned_to')
                     ->options(\App\Models\User::pluck('name', 'id'))
                     ->searchable(),
+                Select::make('priority')
+                    ->label('Priority')
+                    ->options([
+                        'yes' => 'Yes (High Priority)',
+                        'no' => 'No (Normal Priority)',
+                    ])
+                    ->default('no')
+                    ->required()
+                    ->visible(fn () => $this->canManagePriority())
+                    ->disabled(fn () => !$this->canManagePriority()),
+                DatePicker::make('due_date')
+                    ->label('Due Date')
+                    ->displayFormat('d/m/Y')
+                    ->native(false)
+                    ->required(fn () => $this->canManagePriority())
+                    ->visible(fn () => $this->canManagePriority())
+                    ->disabled(fn () => !$this->canManagePriority())
+                    ->minDate(now()->startOfDay())
+                    ->maxDate(now()->addYears(100))
+                    ->rules([
+                        'date',
+                        function ($attribute, $value, $fail) {
+                            if ($this->canManagePriority() && !$value) {
+                                $fail('The due date field is required.');
+                            }
+                            if ($value) {
+                                $dueDate = \Carbon\Carbon::parse($value)->startOfDay();
+                                $today = now()->startOfDay();
+                                if ($dueDate->lt($today)) {
+                                    $fail('The due date must be today or a future date.');
+                                }
+                            }
+                        },
+                        'before_or_equal:2099-12-31',
+                    ])
+                    ->validationMessages([
+                        'before_or_equal' => 'The due date cannot be after 2099.',
+                    ]),
                 Select::make('task_column_id')
                     ->label('Status')
                     ->options(function () {
@@ -155,7 +257,32 @@ class ProjectBoard extends Page
                             ->first()?->id;
                     }),
             ])
+            ->mutateFormDataUsing(function (array $data) {
+                // Convert 'yes' to 'high', 'no' to 'medium' for database
+                if (isset($data['priority']) && $this->canManagePriority()) {
+                    $data['priority'] = $data['priority'] === 'yes' ? 'high' : 'medium';
+                } else {
+                    // If user can't manage priority, always set to medium
+                    $data['priority'] = 'medium';
+                }
+                return $data;
+            })
             ->action(function (array $data) {
+                // Validate date if provided
+                if (isset($data['due_date']) && $data['due_date']) {
+                    // Ensure date is not in the past (compare at start of day)
+                    $dueDate = \Carbon\Carbon::parse($data['due_date'])->startOfDay();
+                    $today = now()->startOfDay();
+                    if ($dueDate->lt($today)) {
+                        Notification::make()
+                            ->title('Invalid Date')
+                            ->body('Due date cannot be in the past.')
+                            ->danger()
+                            ->send();
+                        return;
+                    }
+                }
+                
                 $data['project_id'] = $this->currentProjectId;
                 Task::create($data);
                 
@@ -177,8 +304,11 @@ class ProjectBoard extends Page
             ->modal()
             ->modalHeading('Add New Task')
             ->fillForm(function () {
+                // If adding to Priority column, set priority to yes by default
+                $priority = ($this->columnIdForTask === 'priority') ? 'yes' : 'no';
                 return [
                     'task_column_id' => $this->columnIdForTask,
+                    'priority' => $priority,
                 ];
             })
             ->form([
@@ -187,12 +317,103 @@ class ProjectBoard extends Page
                 Select::make('assigned_to')
                     ->options(\App\Models\User::pluck('name', 'id'))
                     ->searchable(),
+                Select::make('priority')
+                    ->label('Priority')
+                    ->options([
+                        'yes' => 'Yes (High Priority)',
+                        'no' => 'No (Normal Priority)',
+                    ])
+                    ->default(function () {
+                        // If adding to Priority column, default to yes
+                        return ($this->columnIdForTask === 'priority') ? 'yes' : 'no';
+                    })
+                    ->required()
+                    ->visible(fn () => $this->canManagePriority())
+                    ->disabled(function () {
+                        // Disable if adding to Priority column (must be high priority) or if user can't manage priority
+                        return $this->columnIdForTask === 'priority' || !$this->canManagePriority();
+                    }),
+                DatePicker::make('due_date')
+                    ->label('Due Date')
+                    ->displayFormat('d/m/Y')
+                    ->native(false)
+                    ->required(fn () => $this->canManagePriority())
+                    ->visible(fn () => $this->canManagePriority())
+                    ->disabled(fn () => !$this->canManagePriority())
+                    ->minDate(now()->startOfDay())
+                    ->maxDate(now()->addYears(100))
+                    ->rules([
+                        'date',
+                        function ($attribute, $value, $fail) {
+                            if ($this->canManagePriority() && !$value) {
+                                $fail('The due date field is required.');
+                            }
+                            if ($value) {
+                                $dueDate = \Carbon\Carbon::parse($value)->startOfDay();
+                                $today = now()->startOfDay();
+                                if ($dueDate->lt($today)) {
+                                    $fail('The due date must be today or a future date.');
+                                }
+                            }
+                        },
+                        'before_or_equal:2099-12-31',
+                    ])
+                    ->validationMessages([
+                        'before_or_equal' => 'The due date cannot be after 2099.',
+                    ]),
                 Hidden::make('task_column_id')
                     ->required(),
             ])
+            ->mutateFormDataUsing(function (array $data) {
+                // Check permission before allowing priority changes
+                if (!$this->canManagePriority()) {
+                    $data['priority'] = 'medium';
+                } else {
+                    // If adding to Priority column, force priority to 'yes'
+                    if ($this->columnIdForTask === 'priority') {
+                        $data['priority'] = 'yes';
+                    }
+                    
+                    // Convert 'yes' to 'high', 'no' to 'medium' for database
+                    if (isset($data['priority'])) {
+                        $data['priority'] = $data['priority'] === 'yes' ? 'high' : 'medium';
+                    }
+                }
+                
+                // If Priority column, don't set task_column_id (it's virtual)
+                // Instead, find the first regular column or keep it null
+                if ($this->columnIdForTask === 'priority') {
+                    $firstColumn = TaskColumn::where('project_id', $this->currentProjectId)
+                        ->orderBy('sort_order')
+                        ->first();
+                    $data['task_column_id'] = $firstColumn?->id;
+                }
+                
+                return $data;
+            })
             ->action(function (array $data) {
+                // Validate date if provided
+                if (isset($data['due_date']) && $data['due_date']) {
+                    // Ensure date is not in the past (compare at start of day)
+                    $dueDate = \Carbon\Carbon::parse($data['due_date'])->startOfDay();
+                    $today = now()->startOfDay();
+                    if ($dueDate->lt($today)) {
+                        Notification::make()
+                            ->title('Invalid Date')
+                            ->body('Due date cannot be in the past.')
+                            ->danger()
+                            ->send();
+                        return;
+                    }
+                }
+                
                 $data['project_id'] = $this->currentProjectId;
-                $data['task_column_id'] = $this->columnIdForTask;
+                
+                // If Priority column, ensure priority is high
+                if ($this->columnIdForTask === 'priority') {
+                    $data['priority'] = 'high';
+                }
+                
                 Task::create($data);
                 
                 $this->columnIdForTask = null;
@@ -212,6 +433,22 @@ class ProjectBoard extends Page
                 ->warning()
                 ->send();
             return;
+        }
+        
+        // Check if trying to add to priority column without permission
+        if ($columnId === 'priority' && !$this->canManagePriority()) {
+            Notification::make()
+                ->title('Permission Denied')
+                ->body('Only Admin and Team Lead can add tasks to the Priority column.')
+                ->danger()
+                ->send();
+            return;
+        }
+        
+        // Check if Priority column (virtual column)
+        if ($columnId === 'priority') {
+            // Priority column is always available if we're showing it
+            // (it only shows when there are high priority tasks)
         }
         
         $this->columnIdForTask = $columnId;
@@ -324,24 +561,6 @@ class ProjectBoard extends Page
             
             $columns = TaskColumn::where('project_id', $this->currentProjectId)->count();
             
-            // Always show "Add Task" button - directly use the action if columns exist, otherwise show warning
-            // if ($columns > 0) {
-            //     // If columns exist, use the create task action directly
-            //     // $actions[] = $this->createTaskAction();
-            // } else {
-            //     // If no columns, show button that triggers warning
-            //     $actions[] = Action::make('add_task_header')
-            //         ->label('Add Task')
-            //         ->icon('heroicon-m-plus')
-            //         ->action(function () {
-            //             $this->dispatch('show-sweet-alert', [
-            //                 'title' => 'No Columns Found',
-            //                 'text' => 'Please add columns first before adding tasks.',
-            //                 'icon' => 'warning',
-            //             ]);
-            //         });
-            // }
-            
             // Show "Manage Columns" in header if columns exist
             if ($columns > 0) {
                 $actions[] = $this->manageColumnsAction();
@@ -349,6 +568,87 @@ class ProjectBoard extends Page
         }
         
         return $actions;
+    }
+    
+    
+    protected function onScheduleTasksAction(): Action
+    {
+        return Action::make('onScheduleTasks')
+            ->label('On Schedule')
+            ->icon('heroicon-m-clock')
+            ->color('success')
+            ->slideOver()
+            ->modalHeading('On Schedule Tasks')
+            ->form([
+                ViewField::make('tasks_table')
+                    ->view('filament.pages.tasks-datatable')
+                    ->viewData(function () {
+                        return [
+                            'tasks' => $this->getOnScheduleTasks(),
+                            'type' => 'on_schedule',
+                        ];
+                    })
+                    ->columnSpanFull(),
+            ])
+            ->action(function () {
+                // No action needed, just display
+            });
+    }
+    
+    protected function delayedTasksAction(): Action
+    {
+        return Action::make('delayedTasks')
+            ->label('Delayed')
+            ->icon('heroicon-m-exclamation-triangle')
+            ->color('danger')
+            ->slideOver()
+            ->modalHeading('Delayed Tasks')
+            ->form([
+                ViewField::make('tasks_table')
+                    ->view('filament.pages.tasks-datatable')
+                    ->viewData(function () {
+                        return [
+                            'tasks' => $this->getDelayedTasks(),
+                            'type' => 'delayed',
+                        ];
+                    })
+                    ->columnSpanFull(),
+            ])
+            ->action(function () {
+                // No action needed, just display
+            });
+    }
+    
+    public function getOnScheduleTasks()
+    {
+        if (!$this->currentProjectId) {
+            return collect();
+        }
+        
+        $today = now()->startOfDay();
+        
+        return Task::with(['project', 'assignee', 'column'])
+            ->where('project_id', $this->currentProjectId)
+            ->whereNotNull('due_date')
+            ->whereDate('due_date', '>=', $today)
+            ->orderBy('due_date', 'asc')
+            ->get();
+    }
+    
+    public function getDelayedTasks()
+    {
+        if (!$this->currentProjectId) {
+            return collect();
+        }
+        
+        $today = now()->startOfDay();
+        
+        return Task::with(['project', 'assignee', 'column'])
+            ->where('project_id', $this->currentProjectId)
+            ->whereNotNull('due_date')
+            ->whereDate('due_date', '<', $today)
+            ->orderBy('due_date', 'asc')
+            ->get();
     }
 
     // Property to store the task being edited
@@ -400,6 +700,8 @@ class ProjectBoard extends Page
                     'description' => $task->description,
                     'assigned_to' => $task->assigned_to,
                     'task_column_id' => $task->task_column_id,
+                    'priority' => $task->priority === 'high' ? 'yes' : 'no',
+                    'due_date' => $task->due_date,
                 ];
             })
             ->form([
@@ -408,6 +710,45 @@ class ProjectBoard extends Page
                 Select::make('assigned_to')
                     ->options(\App\Models\User::pluck('name', 'id'))
                     ->searchable(),
+
+                Select::make('priority')
+                    ->label('Priority')
+                    ->options([
+                        'yes' => 'Yes (High Priority)',
+                        'no' => 'No (Normal Priority)',
+                    ])
+                    ->required()
+                    ->visible(fn () => $this->canManagePriority())
+                    ->disabled(fn () => !$this->canManagePriority()),
+
+                DatePicker::make('due_date')
+                    ->label('Due Date')
+                    ->displayFormat('d/m/Y')
+                    ->native(false)
+                    ->required(fn () => $this->canManagePriority())
+                    ->visible(fn () => $this->canManagePriority())
+                    ->disabled(fn () => !$this->canManagePriority())
+                    ->minDate(now()->startOfDay())
+                    ->maxDate(now()->addYears(100))
+                    ->rules([
+                        'date',
+                        function ($attribute, $value, $fail) {
+                            if ($this->canManagePriority() && !$value) {
+                                $fail('The due date field is required.');
+                            }
+                            if ($value) {
+                                $dueDate = \Carbon\Carbon::parse($value)->startOfDay();
+                                $today = now()->startOfDay();
+                                if ($dueDate->lt($today)) {
+                                    $fail('The due date must be today or a future date.');
+                                }
+                            }
+                        },
+                        'before_or_equal:2099-12-31',
+                    ])
+                    ->validationMessages([
+                        'before_or_equal' => 'The due date cannot be after 2099.',
+                    ]),
 
                 Select::make('task_column_id')
                     ->label('Status')
@@ -431,11 +772,45 @@ class ProjectBoard extends Page
             ->action(function (array $data) {
                 $task = Task::find($this->editingTaskId);
 
+                // Convert 'yes' to 'high', 'no' to 'medium' for database
+                // Only allow priority changes if user has permission
+                if ($this->canManagePriority() && isset($data['priority'])) {
+                    $priority = $data['priority'] === 'yes' ? 'high' : 'medium';
+                } else {
+                    // Keep existing priority if user can't manage it
+                    $priority = $task->priority ?? 'medium';
+                }
+
+                // Handle due date: only Admin/Team Lead can change it
+                $dueDate = null;
+                if ($this->canManagePriority()) {
+                    // Admin/Team Lead can set/change due date
+                    $dueDate = $data['due_date'] ?? null;
+                    if ($dueDate) {
+                        // Ensure date is not in the past (compare at start of day)
+                        $parsedDate = \Carbon\Carbon::parse($dueDate)->startOfDay();
+                        $today = now()->startOfDay();
+                        if ($parsedDate->lt($today)) {
+                            Notification::make()
+                                ->title('Invalid Date')
+                                ->body('Due date cannot be in the past.')
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+                    }
+                } else {
+                    // Developer/Staff cannot change due date - preserve existing value
+                    $dueDate = $task->due_date;
+                }
+
                 $task->update([
                     'title' => $data['title'],
                     'description' => $data['description'] ?? null,
                     'assigned_to' => $data['assigned_to'] ?? null,
                     'task_column_id' => $data['task_column_id'],
+                    'priority' => $priority,
+                    'due_date' => $dueDate,
                 ]);
 
                 if (! empty($data['new_comment'])) {
