@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\DocumentResource\Pages;
+namespace App\Filament\Resources\Documents\Pages;
 
 use App\Filament\Resources\DocumentResource;
 use App\Filament\Resources\Documents\DocumentResource as DocumentsDocumentResource;

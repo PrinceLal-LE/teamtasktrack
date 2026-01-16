@@ -21,6 +21,9 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
+use App\Filament\Pages\DocumentLibrary;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -30,18 +33,17 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->brandName('Covsm')
+            ->brandName('Team Task Track')
             ->brandLogo(asset('images/Covsm_Logo_1.png'))
             ->brandLogoHeight('2.5rem')
             ->favicon(asset('images/favicon.ico'))
-
             ->login()
             ->authGuard('web')
             ->homeUrl(fn() => match (true) {
-                auth()->user()?->hasRole('Admin')     => url('/admin'),
-                auth()->user()?->hasRole('Team Lead') => url('/teamlead'),
-                auth()->user()?->hasRole('Developer') => url('/developer'),
-                auth()->user()?->hasRole('Staff')     => url('/staff'),
+                Auth::user()?->hasRole('Admin')     => url('/admin'),
+                Auth::user()?->hasRole('Team Lead') => url('/teamlead'),
+                Auth::user()?->hasRole('Developer') => url('/developer'),
+                Auth::user()?->hasRole('Staff')     => url('/staff'),
                 default => url('/'),
             })
             ->colors([

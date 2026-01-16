@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Documents;
 
-use App\Filament\Resources\DocumentResource\Pages\CreateDocument;
+use App\Filament\Resources\Documents\Pages\CreateDocument;
 use App\Filament\Resources\Documents\Pages\EditDocument;
 use App\Filament\Resources\Documents\Pages\ListDocuments;
 use App\Filament\Resources\Documents\Schemas\DocumentForm;
@@ -23,6 +23,8 @@ class DocumentResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
     protected static ?string $navigationLabel = 'Documents';
+
+    
     public static function form(Schema $schema): Schema
     {
         return DocumentForm::configure($schema);
@@ -44,7 +46,7 @@ class DocumentResource extends Resource
     {
         return [
             'index' => ListDocuments::route('/'),
-            // 'create' => CreateDocument::route('/create'),
+            'create' => CreateDocument::route('/create'),
             'edit' => EditDocument::route('/{record}/edit'),
         ];
     }
@@ -52,5 +54,11 @@ class DocumentResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->with('user');
+    }
+
+    // DocumentResource.php
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
     }
 }
