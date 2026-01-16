@@ -54,8 +54,11 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
-                AccountWidget::class,
-                // FilamentInfoWidget::class,
+                \App\Filament\Widgets\StatsCards::class,
+                \App\Filament\Widgets\TaskCompletedChart::class,
+            ])
+            ->widgets([
+                \App\Filament\Widgets\RecentTeamActivity::class,
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -78,6 +81,10 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
                 fn(): string => Blade::render('@vite(["resources/css/app.css", "resources/js/filament-mobile-sidebar.js"])')
+            )
+            ->renderHook(
+                PanelsRenderHook::SIDEBAR_NAV_END,
+                fn(): string => Blade::render('filament.components.sidebar-logout')
             )
             ->path('admin');
     }

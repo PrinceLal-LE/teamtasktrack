@@ -1,27 +1,18 @@
-# Laravel Development Server Startup Script
-cd D:\xampp\htdocs\teamtasktrack
+# Add PHP to PATH for this session
+$env:Path += ";C:\xampp\php"
 
-# Find PHP 8.2 installation
-$php82Dir = (Get-ChildItem "C:\Users\sandip\AppData\Local\Microsoft\WinGet\Packages" -Directory -Filter "PHP.PHP.8.2*" | Select-Object -First 1 -ExpandProperty FullName)
+# Verify PHP is available
+Write-Host "Checking PHP..." -ForegroundColor Yellow
+php -v
 
-if ($php82Dir) {
-    $env:Path = "$php82Dir;$env:Path"
-    Write-Host "PHP found at: $php82Dir" -ForegroundColor Green
-} else {
-    Write-Host "PHP 8.2 not found. Please check your installation." -ForegroundColor Red
-    exit 1
-}
+# Navigate to project directory
+cd $PSScriptRoot
 
-Write-Host ""
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "Starting Laravel Development Server" -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host ""
-Write-Host "Server will be available at:" -ForegroundColor Yellow
-Write-Host "  http://127.0.0.1:8000" -ForegroundColor Green
-Write-Host "  http://localhost:8000" -ForegroundColor Green
-Write-Host ""
-Write-Host "Press Ctrl+C to stop the server" -ForegroundColor Yellow
-Write-Host ""
+# Start Laravel server
+Write-Host "`nStarting Laravel development server..." -ForegroundColor Green
+Write-Host "Server will be available at:" -ForegroundColor Cyan
+Write-Host "  http://127.0.0.1:8000" -ForegroundColor White
+Write-Host "  http://localhost:8000" -ForegroundColor White
+Write-Host "`nPress Ctrl+C to stop the server`n" -ForegroundColor Yellow
 
 php artisan serve
