@@ -221,15 +221,28 @@ class ProjectBoard extends Page
                     ->label('Due Date')
                     ->displayFormat('d/m/Y')
                     ->native(false)
-                    ->minDate(now())
+                    ->required(fn () => $this->canManagePriority())
+                    ->visible(fn () => $this->canManagePriority())
+                    ->disabled(fn () => !$this->canManagePriority())
+                    ->minDate(now()->startOfDay())
                     ->maxDate(now()->addYears(100))
                     ->rules([
                         'date',
-                        'after_or_equal:today',
+                        function ($attribute, $value, $fail) {
+                            if ($this->canManagePriority() && !$value) {
+                                $fail('The due date field is required.');
+                            }
+                            if ($value) {
+                                $dueDate = \Carbon\Carbon::parse($value)->startOfDay();
+                                $today = now()->startOfDay();
+                                if ($dueDate->lt($today)) {
+                                    $fail('The due date must be today or a future date.');
+                                }
+                            }
+                        },
                         'before_or_equal:2099-12-31',
                     ])
                     ->validationMessages([
-                        'after_or_equal' => 'The due date must be today or a future date.',
                         'before_or_equal' => 'The due date cannot be after 2099.',
                     ]),
                 Select::make('task_column_id')
@@ -257,9 +270,10 @@ class ProjectBoard extends Page
             ->action(function (array $data) {
                 // Validate date if provided
                 if (isset($data['due_date']) && $data['due_date']) {
-                    // Ensure date is not in the past
-                    $dueDate = \Carbon\Carbon::parse($data['due_date']);
-                    if ($dueDate->isPast() && !$dueDate->isToday()) {
+                    // Ensure date is not in the past (compare at start of day)
+                    $dueDate = \Carbon\Carbon::parse($data['due_date'])->startOfDay();
+                    $today = now()->startOfDay();
+                    if ($dueDate->lt($today)) {
                         Notification::make()
                             ->title('Invalid Date')
                             ->body('Due date cannot be in the past.')
@@ -323,15 +337,28 @@ class ProjectBoard extends Page
                     ->label('Due Date')
                     ->displayFormat('d/m/Y')
                     ->native(false)
-                    ->minDate(now())
+                    ->required(fn () => $this->canManagePriority())
+                    ->visible(fn () => $this->canManagePriority())
+                    ->disabled(fn () => !$this->canManagePriority())
+                    ->minDate(now()->startOfDay())
                     ->maxDate(now()->addYears(100))
                     ->rules([
                         'date',
-                        'after_or_equal:today',
+                        function ($attribute, $value, $fail) {
+                            if ($this->canManagePriority() && !$value) {
+                                $fail('The due date field is required.');
+                            }
+                            if ($value) {
+                                $dueDate = \Carbon\Carbon::parse($value)->startOfDay();
+                                $today = now()->startOfDay();
+                                if ($dueDate->lt($today)) {
+                                    $fail('The due date must be today or a future date.');
+                                }
+                            }
+                        },
                         'before_or_equal:2099-12-31',
                     ])
                     ->validationMessages([
-                        'after_or_equal' => 'The due date must be today or a future date.',
                         'before_or_equal' => 'The due date cannot be after 2099.',
                     ]),
                 Hidden::make('task_column_id')
@@ -367,9 +394,10 @@ class ProjectBoard extends Page
             ->action(function (array $data) {
                 // Validate date if provided
                 if (isset($data['due_date']) && $data['due_date']) {
-                    // Ensure date is not in the past
-                    $dueDate = \Carbon\Carbon::parse($data['due_date']);
-                    if ($dueDate->isPast() && !$dueDate->isToday()) {
+                    // Ensure date is not in the past (compare at start of day)
+                    $dueDate = \Carbon\Carbon::parse($data['due_date'])->startOfDay();
+                    $today = now()->startOfDay();
+                    if ($dueDate->lt($today)) {
                         Notification::make()
                             ->title('Invalid Date')
                             ->body('Due date cannot be in the past.')
@@ -697,15 +725,28 @@ class ProjectBoard extends Page
                     ->label('Due Date')
                     ->displayFormat('d/m/Y')
                     ->native(false)
-                    ->minDate(now())
+                    ->required(fn () => $this->canManagePriority())
+                    ->visible(fn () => $this->canManagePriority())
+                    ->disabled(fn () => !$this->canManagePriority())
+                    ->minDate(now()->startOfDay())
                     ->maxDate(now()->addYears(100))
                     ->rules([
                         'date',
-                        'after_or_equal:today',
+                        function ($attribute, $value, $fail) {
+                            if ($this->canManagePriority() && !$value) {
+                                $fail('The due date field is required.');
+                            }
+                            if ($value) {
+                                $dueDate = \Carbon\Carbon::parse($value)->startOfDay();
+                                $today = now()->startOfDay();
+                                if ($dueDate->lt($today)) {
+                                    $fail('The due date must be today or a future date.');
+                                }
+                            }
+                        },
                         'before_or_equal:2099-12-31',
                     ])
                     ->validationMessages([
-                        'after_or_equal' => 'The due date must be today or a future date.',
                         'before_or_equal' => 'The due date cannot be after 2099.',
                     ]),
 
@@ -740,19 +781,27 @@ class ProjectBoard extends Page
                     $priority = $task->priority ?? 'medium';
                 }
 
-                // Validate date if provided
-                $dueDate = $data['due_date'] ?? null;
-                if ($dueDate) {
-                    // Ensure date is not in the past
-                    $parsedDate = \Carbon\Carbon::parse($dueDate);
-                    if ($parsedDate->isPast() && !$parsedDate->isToday()) {
-                        Notification::make()
-                            ->title('Invalid Date')
-                            ->body('Due date cannot be in the past.')
-                            ->danger()
-                            ->send();
-                        return;
+                // Handle due date: only Admin/Team Lead can change it
+                $dueDate = null;
+                if ($this->canManagePriority()) {
+                    // Admin/Team Lead can set/change due date
+                    $dueDate = $data['due_date'] ?? null;
+                    if ($dueDate) {
+                        // Ensure date is not in the past (compare at start of day)
+                        $parsedDate = \Carbon\Carbon::parse($dueDate)->startOfDay();
+                        $today = now()->startOfDay();
+                        if ($parsedDate->lt($today)) {
+                            Notification::make()
+                                ->title('Invalid Date')
+                                ->body('Due date cannot be in the past.')
+                                ->danger()
+                                ->send();
+                            return;
+                        }
                     }
+                } else {
+                    // Developer/Staff cannot change due date - preserve existing value
+                    $dueDate = $task->due_date;
                 }
 
                 $task->update([
